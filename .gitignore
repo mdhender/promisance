@@ -1,0 +1,12 @@
+*~
+*.exe
+*.gz
+*.svg
+*.swp
+*.tar
+*.tgz
+*.zip
+.DS_Store
+.env*local
+.idea/
+
