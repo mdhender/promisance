@@ -1,0 +1,165 @@
+// Copyright (c) 2024 Michael D Henderson. All rights reserved.
+
+package main
+
+import (
+	"fmt"
+	"github.com/syyongx/php2go"
+	"log"
+	"os"
+	"time"
+)
+
+const (
+	FALSE = false
+	TRUE  = true
+)
+
+// PHP implements a wrapper for the manually converted PHP code.
+type PHP struct {
+	constants map[string]any
+	globals   struct {
+		banners         []banner_t
+		cur_lang        string
+		empire_defaults map[string]int
+		lang_cache      map[string]any
+		notices         string
+		required_vars   []string
+		sequences       map[string]string
+		tables          map[string]string
+		timezones       map[int]string
+		styles          map[string]css_file_t
+
+		CUR_TIME     time.Time
+		IN_GAME      bool
+		PROM_BASEDIR string
+	}
+	required map[string]bool
+}
+type banner_t struct {
+	key   string
+	value string
+}
+type css_file_t struct {
+	file string
+	name string
+}
+
+func newInstance() (*PHP, error) {
+	p := &PHP{
+		constants: make(map[string]any),
+		required:  make(map[string]bool),
+	}
+	return p, nil
+}
+
+type array struct {
+	data []*arnode
+}
+type arnode struct {
+	key   string
+	value any
+}
+
+//func (p *PHP) mkarray(kv ...any) *array {
+//	a := &array{}
+//	if len(kv)%2 != 0 {
+//		panic(fmt.Sprintf("php: array: %d args", len(kv)))
+//	}
+//	for i := 0; i < len(kv); i += 2 {
+//		key, ok := kv[i].(string)
+//		if !ok {
+//			panic(fmt.Sprintf("php: array: key is not a string: %s", kv[i]))
+//		}
+//		val := kv[i+1]
+//		a.data = append(a.data, &arnode{key: key, value: val})
+//	}
+//	return a
+//}
+
+func (p *PHP) define(key string, value any) {
+	p.constants[key] = value
+}
+
+func (p *PHP) defined(key string) bool {
+	_, ok := p.constants[key]
+	return ok
+}
+
+func (p *PHP) die(format string, args ...any) {
+	log.Printf(format, args...)
+	panic("php: die")
+}
+
+// return trues if the file (or directory) exists
+func (p *PHP) file_exists(name string) bool {
+	_, err := os.Stat(name)
+	return err == nil
+}
+
+func (p *PHP) getcwd() string {
+	wd, _ := php2go.Getcwd()
+	return wd
+}
+
+func (p *PHP) getString(key string) string {
+	v, ok := p.constants[key]
+	if !ok {
+		panic(fmt.Sprintf("php: getString: %q: undefined\n", key))
+	}
+	val, ok := p.constants[key].(string)
+	if !ok {
+		panic(fmt.Sprintf("php: getString: %q: %T\n", key, v))
+	}
+	return val
+}
+
+func (p *PHP) require_once(path string) {
+	// return immediately if we have already loaded the script
+	if p.required[path] {
+		return
+	}
+	var err error
+	switch path {
+	case "config.php":
+		err = p.config_php()
+	case "classes/prom_clan.php":
+		err = fmt.Errorf("assert(path != %q)", path)
+	case "classes/prom_empire.php":
+		err = fmt.Errorf("assert(path != %q)", path)
+	case "classes/prom_session.php":
+		err = fmt.Errorf("assert(path != %q)", path)
+	case "classes/prom_turns.php":
+		err = fmt.Errorf("assert(path != %q)", path)
+	case "classes/prom_user.php":
+		err = fmt.Errorf("assert(path != %q)", path)
+	case "classes/prom_vars.php":
+		err = fmt.Errorf("assert(path != %q)", path)
+	case "includes/PasswordHash.php":
+		err = p.includes_PasswordHash_php()
+	case "includes/auth.php":
+		err = fmt.Errorf("assert(path != %q)", path)
+	case "includes/constants.php":
+		err = p.includes_constants_php()
+	case "includes/database.php":
+		err = p.includes_database_php()
+	case "includes/html.php":
+		err = fmt.Errorf("assert(path != %q)", path)
+	case "includes/language.php":
+		err = p.includes_language_php()
+	case "includes/logging.php":
+		err = fmt.Errorf("assert(path != %q)", path)
+	case "includes/misc.php":
+		err = p.includes_misc_php()
+	case "includes/news.php":
+		err = fmt.Errorf("assert(path != %q)", path)
+	case "includes/permissions.php":
+		err = fmt.Errorf("assert(path != %q)", path)
+	default:
+		err = fmt.Errorf("assert(path != %q)", path)
+	}
+	if err != nil {
+		log.Printf("php: %s: %v\n", path, err)
+		panic(fmt.Sprintf("php: require %q failed", path))
+	}
+}

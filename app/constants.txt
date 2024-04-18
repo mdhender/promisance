@@ -1,0 +1,394 @@
+/* php/classes/prom_clan.php */
+define("RELATION_BOTH", RELATION_OUTBOUND | RELATION_INBOUND);
+define("RELATION_INBOUND", 2);
+define("RELATION_OUTBOUND", 1);
+/* php/classes/prom_empire.php */
+define("TURNS_TROUBLE_CASH", 1);
+define("TURNS_TROUBLE_FOOD", 4);
+define("TURNS_TROUBLE_LOAN", 2);
+/* php/classes/prom_empire_effects.php */
+define("EMPIRE_EFFECT_PERM", "p_");
+define("EMPIRE_EFFECT_TIME", "m_");
+define("EMPIRE_EFFECT_TURN", "r_");
+/* php/classes/prom_era.php */
+define("ERA_FUTURE", 3);
+define("ERA_PAST", 1);
+define("ERA_PRESENT", 2);
+/* php/classes/prom_race.php */
+define("RACE_DROW", 8);
+define("RACE_DWARF", 3);
+define("RACE_ELF", 2);
+define("RACE_GNOME", 5);
+define("RACE_GOBLIN", 9);
+define("RACE_GREMLIN", 6);
+define("RACE_HUMAN", 1);
+define("RACE_ORC", 7);
+define("RACE_TROLL", 4);
+/* php/classes/prom_session.php */
+define("SESSION_COOKIE", "prom_session");
+/* php/classes/prom_turns.php */
+define("TURNS_NEED_DAY",	0x04);
+define("TURNS_NEED_FINAL",	0x08);
+define("TURNS_NEED_HOUR",	0x02);
+define("TURNS_NEED_NORMAL",	0x01);
+/* php/config.php */
+define("AID_DELAY", 60 * 60);	// Once you send too much aid, how many seconds before you can send more
+define("AID_ENABLE", TRUE);	// Enable sending foreign aid
+define("AID_MAXCREDITS", 5);	// Maximum number of aid credits that can be accumulated at once
+define("BANK_LOANRATE", 7.5);	// Base loan interest rate
+define("BANK_SAVERATE", 4.0);	// Base savings interest rate
+define("BASE_LANGUAGE", "en-US");	// Base language pack, used for anything not defined in current/default
+define("BONUS_TURNS", TRUE);	// Allow users to collect 1 hour worth of bonus turns each day.
+define("BUILD_COST", 3500);	// Base building cost
+define("CLANSTATS_MINSIZE", 1);	// Minimum member count for inclusion on Top Clans page
+define("CLAN_ENABLE", TRUE);	// Master enable for clans
+define("CLAN_INVITE_TIME", 48);	// How long clan invites last before they expire
+define("CLAN_LATE_JOIN", TRUE);	// Allow empires to join clans during the cooldown period
+define("CLAN_MAXALLY", 3);	// Maximum number of alliances (outbound and inbound)
+define("CLAN_MAXWAR", 3);	// Maximum number of wars (outbound only)
+define("CLAN_MINJOIN", 72);	// Empires can"t leave clans until they"ve been a member for this many hours
+define("CLAN_MINREJOIN", 24);	// Empires can"t create/join a new clan until this many hours after they left
+define("CLAN_MINRELATE", 48);	// How long a clan must wait before it can modify an alliance or war slot
+define("CLAN_MINSHARE", 2);	// Unsharing clan forces takes this many hours to take effect
+define("CLAN_VIEW_AID", TRUE);	// Display summary of all foreign aid sent between clan members on Clan Management page
+define("CLAN_VIEW_STAT", TRUE);	// Allow clan leaders to view the detailed Empire Status of members
+define("COUNTER_DIGITS", 3);	// Number of digits for "registered empires" counter
+define("COUNTER_TEMPLATE", "counter2.png");	// Digit style for "registered empires" counter
+define("DB_HOST", "");		// Database server hostname (for Windows, or for remote connections - use instead of socket)
+define("DB_NAME", "");		// Database schema
+define("DB_PASS", "");		// Database server password
+define("DB_PORT", "");		// Database server port (blank for default)
+define("DB_SOCK", "");		// Database server socket (for local connections, UNIX only - use instead of host/port)
+define("DB_TYPE", "mysql");	// Database server type (see includes/database.php for allowed values)
+define("DB_USER", "");		// Database server username
+define("DEBUG_FOOTER", FALSE);	// Display page generation time, memory usage, and query count at bottom of page
+define("DEFAULT_DATEFORMAT", "r");	// Default date/time format for new accounts
+define("DEFAULT_LANGUAGE", "en-US");	// Default language pack to use, also used when not logged in
+define("DEFAULT_STYLE", "qmt");	// Default style, also used when not logged in
+define("DEFAULT_TIMEZONE", -21600);	// Default timezone for new accounts
+define("DROP_DELAY", 60*60*12);	// Minimum delay (in seconds) between gaining land and dropping it
+define("EMPIRES_PER_USER", 1);		// How many empires can be owned at once by a particular user?
+define("FRIEND_MAGIC_ENABLE", FALSE);	// Enable casting spells on friendly empires
+define("GAME_TITLE", "QM Promisance ". GAME_VERSION);				// server title, may customize to liking
+define("GAME_VERSION", "4.81");
+define("GRAVEYARD_DISCLOSE", FALSE);	// Reveal user account name of empires in the Graveyard
+define("IDLE_TIMEOUT_ABANDON", 14);	// Remove established empire if idle for this many days (and not on vacation or disabled)
+define("IDLE_TIMEOUT_DELETE", 3);	// Remove deleted empire after this many days (unless still under protection, in which case it is immediate)
+define("IDLE_TIMEOUT_KILLED", 2);	// Remove dead empire after this many days if never logged in to see notification
+define("IDLE_TIMEOUT_NEW", 3);		// Remove new empire if idle for this many days before being prompted to validate (create and abandon)
+define("IDLE_TIMEOUT_VALIDATE", 2);	// Remove new empire if prompted to validate but fails to do so within this many days (bad email address)
+define("INDUSTRY_MULT", 2.5);	// Industry output multiplier
+define("LOG_ENABLE", FALSE);	// Enable logging of all in-game events
+define("LOTTERY_JACKPOT", 1000000000);	// Base jackpot
+define("LOTTERY_MAXTICKETS", 3);	// Maximum number of lottery tickets per empire
+define("MAGIC_ALLOW_REGRESS", FALSE);	// Enables usage of the "Regress to Previous Era" spell
+define("MAIL_ADMIN", "admin@yoursite.com");					// administrative contact address
+define("MAIL_VALIDATE", "promisance@yoursite.com");				// source address for validation emails
+define("MAX_ATTACKS", 30);	// Maximum number of attacks
+define("MESSAGES_DELAY", 10 * 60);	// Once you send too many messages, how many seconds before you can send more
+define("MESSAGES_MAXCREDITS", 5);	// Maximum number of new private messages that can be sent at once
+define("PUBMKT_MAXFOOD", 90);	// Same as MAXSELL, except for food
+define("PUBMKT_MAXSELL", 25);	// Maximum percentage of troops, total, that can be sold on public market (0-100)
+define("PUBMKT_MAXTIME", 72);	// Number of hours before items are automatically removed (-1 to disallow)
+define("PUBMKT_MINFOOD", 0);	// Same as MINSELL, except for food
+define("PUBMKT_MINSELL", 0);	// Minimum percentage of troops, per shipment, that can be sold on public market (0-100)
+define("PUBMKT_MINTIME", -1);	// Number of hours before users can manually remove items (-1 to disallow)
+define("PUBMKT_START", 6);	// Hours before goods will arrive on public market
+define("PVTM_FOOD", 30);
+define("PVTM_MAXSELL", 8000);	// Percentage of troops that can be sold on private market (0-10000)
+define("PVTM_SHOPBONUS", 0.20);	// Percentage of private market cost bonus for which shops are responsible (0-1)
+define("PVTM_TRPARM", 500);	// Base market costs for each unit
+define("PVTM_TRPFLY", 2000);
+define("PVTM_TRPLND", 1000);
+define("PVTM_TRPSEA", 3000);
+define("SCORE_ENABLE", FALSE);	// Enable keeping score for empires attacking each other
+define("SIGNUP_CLOSED_EMPIRE", FALSE);	// Don"t allow creation of new empires from signup page
+define("SIGNUP_CLOSED_USER", FALSE);	// Don"t allow creation of new user accounts from signup page
+define("TABLE_PREFIX", "");	// Table name prefix (in case only a single database schema is available)
+define("TOPEMPIRES_COUNT", 50);	// Maximum number of empires to list on Top Empires page
+define("TOPPLAYERS_COUNT", 50);	// Maximum number of user accounts to list on All Time Top Players page
+define("TURNS_COUNT", 1);	// how many turns to give during each period
+define("TURNS_CRONLOG", TRUE);	// if TURNS_CRONTAB is disabled, store turn logs in the database for retrieval by turns.php
+define("TURNS_CRONTAB", TRUE);	// use "turns.php" to give out turns, scheduled via crontab; otherwise, trigger on page loads
+define("TURNS_ERA", 500);		// Minimum number of turns that must be spent in an era before one can advance or regress
+define("TURNS_FREQ", 10);	// how often to give turns
+define("TURNS_INITIAL", 100);		// Turns given on signup
+define("TURNS_MAXIMUM", 250);		// Max accumulated turns
+define("TURNS_OFFSET", 0);	// offset (in minutes) for giving turns, relative to round start
+define("TURNS_OFFSET_DAILY", 60*12);	// offset (in minutes) for performing daily events, relative to round start
+define("TURNS_OFFSET_HOURLY", 0);	// offset (in minutes) for performing hourly events, relative to round start
+define("TURNS_PROTECTION", 200);	// Duration of protection
+define("TURNS_STORED", 100);		// Max stored turns
+define("TURNS_UNSTORE", 1);	// how many turns to release from Stored Turns at once
+define("TURNS_VALIDATE", 150);		// How long before validation is necessary
+define("TXT_EMAIL", "Be sure to check out http://www.qmtpro.com/ and tell your friends about us!");
+define("TXT_NEWS", "<span style="color:white">Welcome to ". GAME_TITLE ."!</span>");
+define("TXT_RULES", "Additional information can be found in our forums.<br />"	// extra rules to display on signup page
+define("URL_BASE", "http://www.yoursite.com/promisance/");			// the path in which Promisance is installed
+define("URL_FORUMS", "http://www.yoursite.com/forums/viewforum.php?f=N");	// where your site"s forums are located
+define("URL_HOMEPAGE", "http://www.yoursite.com/");				// where users will be sent when they logout
+define("VACATION_LIMIT", 72);		// Minimum vacation length (not including start delay)
+define("VACATION_START", 12);		// Delay before empire is protected
+define("VALIDATE_ALLOW", TRUE);	// Allow users to validate their own empires
+define("VALIDATE_REQUIRE", TRUE);	// Require users to validate their empires before they can continue playing
+define("VALIDATE_RESEND", 60 * 60);	// How long users must wait between resending their validation code
+/* php/includes/constants.php */
+define("CIFLAG_PERM",	0x01);	// Clan invitation is permanent, effectively a whitelist entry
+define("CLAN_INVITE_TABLE", TABLE_PREFIX ."clan_invite");
+define("CLAN_MESSAGE_TABLE", TABLE_PREFIX ."clan_message");
+define("CLAN_NEWS_TABLE", TABLE_PREFIX ."clan_news");
+define("CLAN_RELATION_TABLE", TABLE_PREFIX ."clan_relation");
+define("CLAN_TABLE", TABLE_PREFIX ."clan");
+define("CLAN_TOPIC_TABLE", TABLE_PREFIX ."clan_topic");
+define("CMFLAG_DELETE",	0x02);	// Post has been deleted
+define("CMFLAG_EDIT",	0x01);	// Post has been edited
+define("CRFLAG_ALLY",	0x02);	// Clan relation describes an alliance
+define("CRFLAG_MUTUAL",	0x01);	// Clan relation is mutual - set to complete an alliance, clear to stop a war
+define("CRFLAG_WAR",	0x04);	// Clan relation describes a war
+define("CTFLAG_DELETE",	0x08);	// Topic has been deleted
+define("CTFLAG_LOCK",	0x04);	// Topic has been locked - normal members may not post
+define("CTFLAG_NEWS",	0x01);	// Topic contains News postings for the clan, visible on main page
+define("CTFLAG_STICKY",	0x02);	// Topic is sticky and appears in bold at the top of the list
+define("CUR_TIME", time());
+define("EFLAG_ADMIN",	0x0002);	// Empire is owned by moderator/administrator and cannot interact with other empires
+define("EFLAG_DELETE",	0x0010);	// Empire is flagged for deletion
+define("EFLAG_DISABLE",	0x0004);	// Empire is disabled
+define("EFLAG_LOGGED",	0x0200);	// All actions performed by empire are logged with a special event code
+//define("EFLAG_MOD",	0);		// Unused
+define("EFLAG_MULTI",	0x0020);	// Empire is one of multiple accounts being accessed from the same location (legally or not)
+define("EFLAG_NOTIFY",	0x0040);	// Empire is in a notification state and cannot perform actions (and will not update idle time)
+define("EFLAG_ONLINE",	0x0080);	// Empire is currently logged in
+define("EFLAG_SILENT",	0x0100);	// Empire is prohibited from sending private messages to non-Administrators
+define("EFLAG_VALID",	0x0008);	// Empire has submitted their validation code
+define("EMPIRE_EFFECT_TABLE", TABLE_PREFIX ."empire_effect");
+define("EMPIRE_MESSAGE_TABLE", TABLE_PREFIX ."empire_message");
+define("EMPIRE_NEWS_TABLE", TABLE_PREFIX ."empire_news");
+define("EMPIRE_TABLE", TABLE_PREFIX ."empire");
+define("ENT_CLAN",	3);	// Clan
+define("ENT_EMPIRE",	2);	// Empire
+define("ENT_MARKET",	5);	// Public market items
+define("ENT_USER",	1);	// User account
+define("ENT_VARS",	4);	// World variables
+define("HEFLAG_ADMIN",	EFLAG_ADMIN);	// Empire was owned by a moderator/administrator
+define("HEFLAG_PROTECT",	0x01);	// Empire was protected, whether vacation or newly registered
+define("HISTORY_CLAN_TABLE", TABLE_PREFIX ."history_clan");
+define("HISTORY_EMPIRE_TABLE", TABLE_PREFIX ."history_empire");
+define("HISTORY_ROUND_TABLE", TABLE_PREFIX ."history_round");
+define("HRFLAG_CLANS",	0x01);	// Round had clans enabled
+define("HRFLAG_SCORE",	0x02);	// Round ranked empires by score rather than networth
+define("LOCK_HISTORY",	2147483644);	// Record history
+define("LOCK_NEW",	2147483646);	// New entity creation
+define("LOCK_RESET",	2147483645);	// Round reset
+define("LOCK_SCRIPT",	2147483643);	// Utility script
+define("LOCK_TABLE", TABLE_PREFIX ."locks");
+define("LOCK_TURNS",	2147483647);	// Turns script
+define("LOG_TABLE", TABLE_PREFIX ."log");
+define("LOTTERY_TABLE", TABLE_PREFIX ."lottery");
+define("MARKET_FOOD",	4);
+define("MARKET_TABLE", TABLE_PREFIX ."market");
+define("MARKET_TRPARM",	0);
+define("MARKET_TRPFLY",	2);
+define("MARKET_TRPLND",	1);
+define("MARKET_TRPSEA",	3);
+define("MFLAG_DEAD",	0x10);	// Message sender is dead
+define("MFLAG_DELETE",	0x01);	// Message has been deleted
+define("MFLAG_READ",	0x02);	// Message has been read
+define("MFLAG_REPLY",	0x04);	// Message has been replied to
+define("MFLAG_REPORT",	0x08);	// Message has been reported for abuse
+define("NFLAG_GOTTEN",	0x04);	// Items attached to the news message have been received
+define("NFLAG_LOCK",	0x02);	// News item is currently being processed
+define("NFLAG_READ",	0x01);	// News item has been read
+define("PERMISSION_TABLE", TABLE_PREFIX ."permission");
+define("PERM_EMAIL",	0x02);	// Permission specifies an email address mask
+define("PERM_EXCEPT",	0x01);	// Permission entry is an exception rather than a ban
+define("PERM_IPV4",	0x00);	// Permission specifies an IPv4 address+mask
+define("PERM_IPV6",	0x04);	// Permission specifies an IPv6 address+mask
+define("PERM_MASK",	0x06);	// Bitmask for permission types
+define("SESSION_TABLE", TABLE_PREFIX ."session");
+define("TURNLOG_TABLE", TABLE_PREFIX ."turnlog");
+define("TURN_ABORT",	3);	// Turn run was aborted due to there being nothing to do
+define("TURN_END",	2);	// End of a turn run
+define("TURN_EVENT",	0);	// Normal turn log entry
+define("TURN_START",	1);	// Start of a turn run
+define("UFLAG_ADMIN",	0x02);	// User has Administrator privileges (can grant/revoke privileges, delete/rename empires, login as anyone, edit clans)
+define("UFLAG_CLOSED",	0x10);	// User account has been voluntarily closed, cannot create new empires or login to existing ones
+define("UFLAG_DISABLE",	0x04);	// User account is disabled, cannot create new empires (but can still login to existing ones)
+define("UFLAG_MOD",	0x01);	// User has Moderator privileges (can set/clear multi and disabled flags, can browse empire messages)
+define("UFLAG_VALID",	0x08);	// User account"s email address has been validated at least once
+define("UFLAG_WATCH",	0x20);	// User account is suspected of abuse
+define("USER_TABLE", TABLE_PREFIX ."users");
+define("VAR_ADJUST_TABLE", TABLE_PREFIX ."var_adjust");
+define("VAR_TABLE", TABLE_PREFIX ."var");
+/* php/includes/guide.php */
+define("GUIDE_ADMIN", 7);
+define("GUIDE_FINANCE", 4);
+define("GUIDE_FOREIGN", 5);
+define("GUIDE_INFO", 2);
+define("GUIDE_INTRO", 1);
+define("GUIDE_MANAGE", 6);
+define("GUIDE_TURNS", 3);
+define("IN_GUIDE", TRUE);
+/* php/includes/language.php */
+define("DURATION_DAYS", 3);
+define("DURATION_HOURS", 2);
+define("DURATION_MINUTES", 1);
+define("DURATION_SECONDS", 0);
+/* php/includes/news.php */
+define("CLANNEWS_MEMBER_CREATE", 100);		// e1:founder
+define("CLANNEWS_MEMBER_DEAD", 104);		// e1:dead member
+define("CLANNEWS_MEMBER_INVITE_PERM", 108);	// e1:inviter, e2:recipient
+define("CLANNEWS_MEMBER_INVITE_TEMP", 107);	// e1:inviter, e2:recipient
+define("CLANNEWS_MEMBER_JOIN", 101);		// e1:new member
+define("CLANNEWS_MEMBER_LEAVE", 102);		// e1:former member
+define("CLANNEWS_MEMBER_REMOVE", 103);		// e1:former member, e2:kicker
+define("CLANNEWS_MEMBER_SHARE", 105);		// e1:member
+define("CLANNEWS_MEMBER_UNINVITE_PERM", 110);	// e1:uninviter, e2:recipient
+define("CLANNEWS_MEMBER_UNINVITE_TEMP", 109);	// e1:uninviter, e2:recipient
+define("CLANNEWS_MEMBER_UNSHARE", 106);		// e1:member
+define("CLANNEWS_PERM_ASSISTANT_INHERIT", 206);	// e1:new leader, e2:old leader
+define("CLANNEWS_PERM_GRANT_ASSISTANT", 202);	// e1:new asst, e2:grantor
+define("CLANNEWS_PERM_GRANT_LEADER", 200);	// e1:new leader, e2:grantor
+define("CLANNEWS_PERM_GRANT_MINISTER", 204);	// e1:new fa, e2:grantor
+define("CLANNEWS_PERM_MEMBER_INHERIT", 208);	// e1:new leader, e2:old leader
+define("CLANNEWS_PERM_MINISTER_INHERIT", 207);	// e1:new leader, e2:old leader
+define("CLANNEWS_PERM_REVOKE_ASSISTANT", 203);	// e1:old asst, e2:grantor
+define("CLANNEWS_PERM_REVOKE_LEADER", 201);	// e1:old leader, e2:grantor
+define("CLANNEWS_PERM_REVOKE_MINISTER", 205);	// e1:old fa, e2:grantor
+define("CLANNEWS_PROP_CHANGE_LOGO", 303);	// e1:changer
+define("CLANNEWS_PROP_CHANGE_PASSWORD", 300);	// e1:changer
+define("CLANNEWS_PROP_CHANGE_TITLE", 301);	// e1:changer
+define("CLANNEWS_PROP_CHANGE_URL", 302);	// e1:changer
+define("CLANNEWS_RECV_ALLY_DECLINE", 410);	// e2:declarer, c2:ally
+define("CLANNEWS_RECV_ALLY_GONE", 411);		// c2:ally
+define("CLANNEWS_RECV_ALLY_REQUEST", 406);	// e2:declarer, c2:ally
+define("CLANNEWS_RECV_ALLY_RETRACT", 409);	// e2:declarer, c2:ally
+define("CLANNEWS_RECV_ALLY_START", 407);	// e2:declarer, c2:ally
+define("CLANNEWS_RECV_ALLY_STOP", 408);		// e2:declarer, c2:ally
+define("CLANNEWS_RECV_WAR_GONE", 405);		// c2:opponent
+define("CLANNEWS_RECV_WAR_REJECT", 404);	// e2:declarer, c2:opponent
+define("CLANNEWS_RECV_WAR_REQUEST", 401);	// e2:declarer, c2:opponent
+define("CLANNEWS_RECV_WAR_RETRACT", 403);	// e2:declarer, c2:opponent
+define("CLANNEWS_RECV_WAR_START", 400);		// e2:declarer, c2:opponent
+define("CLANNEWS_RECV_WAR_STOP", 402);		// e2:declarer, c2:opponent
+define("CLANNEWS_SEND_ALLY_DECLINE", 509);	// e1:declarer, c2:ally
+define("CLANNEWS_SEND_ALLY_REQUEST", 505);	// e1:declarer, c2:ally
+define("CLANNEWS_SEND_ALLY_RETRACT", 508);	// e1:declarer, c2:ally
+define("CLANNEWS_SEND_ALLY_START", 506);	// e1:declarer, c2:ally
+define("CLANNEWS_SEND_ALLY_STOP", 507);		// e1:declarer, c2:ally
+define("CLANNEWS_SEND_WAR_REJECT", 504);	// e1:declarer, c2:opponent
+define("CLANNEWS_SEND_WAR_REQUEST", 501);	// e1:declarer, c2:opponent
+define("CLANNEWS_SEND_WAR_RETRACT", 503);	// e1:declarer, c2:opponent
+define("CLANNEWS_SEND_WAR_START", 500);		// e1:declarer, c2:opponent
+define("CLANNEWS_SEND_WAR_STOP", 502);		// e1:declarer, c2:opponent
+define("EMPNEWS_ATTACH_AID_RETURN", 104);	// 0:intended to return, 1:actually returned
+define("EMPNEWS_ATTACH_AID_SEND", 103);		// 0:convoy, 1:trparm, 2:trplnd, 3:trpfly, 4:trpsea, 5:cash, 6:runes, 7:food
+define("EMPNEWS_ATTACH_AID_SENDCLAN", 105);	// 0:convoy, 1:trparm, 2:trplnd, 3:trpfly, 4:trpsea, 5:cash, 6:runes, 7:food
+define("EMPNEWS_ATTACH_FIRST", 100);		// First attachment event, MUST be equal to the event below
+define("EMPNEWS_ATTACH_LAST", 105);		// Last attachment event, MUST be equal to the event above
+define("EMPNEWS_ATTACH_LOTTERY", 101);		// 0:winnings
+define("EMPNEWS_ATTACH_MARKET_RETURN", 102);	// 0:type, 1:amount, 2:price, 3:returned
+define("EMPNEWS_ATTACH_MARKET_SELL", 100);	// 0:type, 1:amount, 2:paid, 3:earned (minus tax)
+define("EMPNEWS_CLAN_ALLY_DECLINE", 421);	// no arguments
+define("EMPNEWS_CLAN_ALLY_GONE", 422);		// no arguments
+define("EMPNEWS_CLAN_ALLY_REQUEST", 417);	// no arguments
+define("EMPNEWS_CLAN_ALLY_RETRACT", 420);	// no arguments
+define("EMPNEWS_CLAN_ALLY_START", 418);		// no arguments
+define("EMPNEWS_CLAN_ALLY_STOP", 419);		// no arguments
+define("EMPNEWS_CLAN_CREATE", 400);		// no arguments
+define("EMPNEWS_CLAN_DISBAND", 401);		// no arguments
+define("EMPNEWS_CLAN_GRANT_ASSISTANT", 407);	// no arguments
+define("EMPNEWS_CLAN_GRANT_LEADER", 405);	// no arguments
+define("EMPNEWS_CLAN_GRANT_MINISTER", 409);	// no arguments
+define("EMPNEWS_CLAN_INHERIT_LEADER", 406);	// no arguments
+define("EMPNEWS_CLAN_INVITE_DISBANDED", 428);	// no arguments
+define("EMPNEWS_CLAN_INVITE_PERM", 425);	// no arguments
+define("EMPNEWS_CLAN_INVITE_TEMP", 424);	// no arguments
+define("EMPNEWS_CLAN_JOIN", 402);		// no arguments
+define("EMPNEWS_CLAN_LEAVE", 403);		// no arguments
+define("EMPNEWS_CLAN_REMOVE", 404);		// no arguments
+define("EMPNEWS_CLAN_REVOKE_ASSISTANT", 408);	// no arguments
+define("EMPNEWS_CLAN_REVOKE_LEADER", 423);	// no arguments
+define("EMPNEWS_CLAN_REVOKE_MINISTER", 410);	// no arguments
+define("EMPNEWS_CLAN_UNINVITE_PERM", 427);	// no arguments
+define("EMPNEWS_CLAN_UNINVITE_TEMP", 426);	// no arguments
+define("EMPNEWS_CLAN_WAR_GONE", 416);		// no arguments
+define("EMPNEWS_CLAN_WAR_REJECT", 415);		// no arguments
+define("EMPNEWS_CLAN_WAR_REQUEST", 412);	// no arguments
+define("EMPNEWS_CLAN_WAR_RETRACT", 414);	// no arguments
+define("EMPNEWS_CLAN_WAR_START", 411);		// no arguments
+define("EMPNEWS_CLAN_WAR_STOP", 413);		// no arguments
+define("EMPNEWS_MAGIC_ADVANCE", 213);		// unused
+define("EMPNEWS_MAGIC_BLAST", 202);		// 0:result
+define("EMPNEWS_MAGIC_CASH", 208);		// unused
+define("EMPNEWS_MAGIC_FIGHT", 211);		// 0:result (>0 = acres taken), 1:target trpwiz loss, 2:attacker trpwiz loss
+define("EMPNEWS_MAGIC_FOOD", 207);		// unused
+define("EMPNEWS_MAGIC_GATE", 209);		// unused
+define("EMPNEWS_MAGIC_REGRESS", 214);		// unused
+define("EMPNEWS_MAGIC_RUNES", 205);		// 0:result, 1:runes
+define("EMPNEWS_MAGIC_SHIELD", 203);		// unused
+define("EMPNEWS_MAGIC_SPY", 201);		// 0:result
+define("EMPNEWS_MAGIC_STEAL", 212);		// 0:result, 1:cash
+define("EMPNEWS_MAGIC_STORM", 204);		// 0:result, 1:food, 2:cash
+define("EMPNEWS_MAGIC_STRUCT", 206);		// 0:result, 1:buildings
+define("EMPNEWS_MAGIC_UNGATE", 210);		// unused
+define("EMPNEWS_MILITARY_AID", 300);		// 0:empire protected
+define("EMPNEWS_MILITARY_ARM", 304);		// 0:acres, 1:target trparm loss, 2:attacker trparm loss
+define("EMPNEWS_MILITARY_FLY", 306);		// 0:acres, 1:target trpfly loss, 2:attacker trpfly loss
+define("EMPNEWS_MILITARY_KILL", 301);		// no arguments
+define("EMPNEWS_MILITARY_LND", 305);		// 0:acres, 1:target trplnd loss, 2:attacker trplnd loss
+define("EMPNEWS_MILITARY_SEA", 307);		// 0:acres, 1:target trpsea loss, 2:attacker trpsea loss
+define("EMPNEWS_MILITARY_STANDARD", 302);	// 0:acres, 1:target trparm loss, 2:target trplnd loss, 3:target trpfly loss, 4:target trpsea loss,
+define("EMPNEWS_MILITARY_SURPRISE", 303);	// 0:acres, 1:target trparm loss, 2:target trplnd loss, 3:target trpfly loss, 4:target trpsea loss,
+define("SPELLRESULT_NOEFFECT", 0);
+define("SPELLRESULT_SHIELDED", 1);
+define("SPELLRESULT_SUCCESS", 2);
+/* php/index.php */
+define("ROUND_CLOSING", FALSE);
+define("ROUND_CLOSING", FALSE);
+define("ROUND_CLOSING", FALSE);
+define("ROUND_CLOSING", TRUE);
+define("ROUND_FINISHED", FALSE);
+define("ROUND_FINISHED", FALSE);
+define("ROUND_FINISHED", FALSE);
+define("ROUND_FINISHED", TRUE);
+define("ROUND_SIGNUP", FALSE);
+define("ROUND_SIGNUP", FALSE);
+define("ROUND_SIGNUP", TRUE);
+define("ROUND_SIGNUP", TRUE);
+define("ROUND_STARTED", FALSE);
+define("ROUND_STARTED", FALSE);
+define("ROUND_STARTED", TRUE);
+define("ROUND_STARTED", TRUE);
+define("TXT_TIMENOTICE", lang("ROUND_HAS_ENDED"));
+define("TXT_TIMENOTICE", lang("ROUND_WILL_BEGIN", gmdate(lang("ROUND_WILL_BEGIN_FORMAT"), $world->round_time_begin - CUR_TIME)));
+define("TXT_TIMENOTICE", lang("ROUND_WILL_END", gmdate(lang("ROUND_WILL_END_FORMAT"), $world->round_time_end - CUR_TIME)));
+define("IN_GAME", TRUE);
+define("PROM_BASEDIR", dirname(__FILE__) . "/");
+/* php/install/setup.php */
+define("IN_GAME", TRUE);
+define("IN_SETUP", TRUE);
+define("PROM_BASEDIR", dirname(__FILE__) . "/");
+/* php/turns.php */
+define("IN_GAME", TRUE);
+define("IN_TURNS", TRUE);
+define("PROM_BASEDIR", dirname(__FILE__) . "/");
+/* php/util/checklang.php */
+define("IN_GAME", TRUE);
+define("IN_SCRIPT", TRUE);
+define("PROM_BASEDIR", dirname(dirname(__FILE__)) . "/");
+/* php/util/createlocks.php */
+define("IN_GAME", TRUE);
+define("IN_SCRIPT", TRUE);
+define("PROM_BASEDIR", dirname(dirname(__FILE__)) . "/");
+/* php/util/fixids.php */
+define("IN_GAME", TRUE);
+define("IN_SCRIPT", TRUE);
+define("PROM_BASEDIR", dirname(dirname(__FILE__)) . "/");
+/* php/util/fixranks.php */
+define("IN_GAME", TRUE);
+define("IN_SCRIPT", TRUE);
+define("PROM_BASEDIR", dirname(dirname(__FILE__)) . "/");
+/* php/util/worldvars.php */
+define("IN_GAME", TRUE);
+define("IN_SCRIPT", TRUE);
+define("PROM_BASEDIR", dirname(dirname(__FILE__)) . "/");
