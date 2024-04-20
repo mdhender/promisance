@@ -197,8 +197,18 @@ var serverCmd = &cobra.Command{
 		s.world, err = s.db.WorldVarsFetch()
 		if err != nil {
 			log.Fatalf("server: failed to fetch vars: %v\n", err)
+		} else if s.world == nil {
+			log.Fatalf("server: database: world_vars undefined\n")
+		} else if s.world.Id != 1 {
+			log.Fatalf("server: database: world_vars corrupted\n")
 		}
 		log.Printf("server: fetched world variables\n")
+
+		// If we're configured for cronless turn updates, check them now
+		//turns, err := s.db.P prom_turns();
+		//if !TURNS_CRONTAB {
+		//	turns.doUpdate()
+		//}
 
 		log.Printf("server: serving on http://%s\n", s.addr)
 		log.Fatalln(http.ListenAndServe(s.addr, handler))

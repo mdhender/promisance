@@ -126,6 +126,7 @@ type UserFlag_t struct {
 }
 
 type World_t struct {
+	Id                    int
 	LottoCurrentJackpot   int
 	LottoYesterdayJackpot int
 	LottoLastPicked       int

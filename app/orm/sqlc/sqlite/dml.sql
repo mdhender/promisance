@@ -123,7 +123,8 @@ INSERT INTO world_vars(lotto_current_jackpot, lotto_yesterday_jackpot, lotto_las
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- name: WorldVarsFetch :one
-SELECT lotto_current_jackpot,
+SELECT wv_id,
+       lotto_current_jackpot,
        lotto_yesterday_jackpot,
        lotto_last_picked,
        lotto_last_winner,

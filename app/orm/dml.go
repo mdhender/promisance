@@ -312,6 +312,7 @@ func (db *DB) WorldVarsFetch() (*model.World_t, error) {
 		return nil, err
 	}
 	return &model.World_t{
+		Id:                    int(row.WvID),
 		LottoCurrentJackpot:   int(row.LottoCurrentJackpot),
 		LottoYesterdayJackpot: int(row.LottoYesterdayJackpot),
 		LottoLastPicked:       int(row.LottoLastPicked),

@@ -402,6 +402,7 @@ CREATE TABLE var_adjust
 DROP TABLE IF EXISTS world_vars;
 CREATE TABLE world_vars
 (
+    wv_id                   INTEGER PRIMARY KEY,
     lotto_current_jackpot   INTEGER   NOT NULL,
     lotto_yesterday_jackpot INTEGER   NOT NULL,
     lotto_last_picked       INTEGER   NOT NULL,

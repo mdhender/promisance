@@ -315,6 +315,7 @@ type VarAdjust struct {
 }
 
 type WorldVar struct {
+	WvID                  int64
 	LottoCurrentJackpot   int64
 	LottoYesterdayJackpot int64
 	LottoLastPicked       int64

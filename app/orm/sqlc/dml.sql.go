@@ -370,7 +370,8 @@ func (q *Queries) UserPasswordUpdate(ctx context.Context, arg UserPasswordUpdate
 }
 
 const worldVarsFetch = `-- name: WorldVarsFetch :one
-SELECT lotto_current_jackpot,
+SELECT wv_id,
+       lotto_current_jackpot,
        lotto_yesterday_jackpot,
        lotto_last_picked,
        lotto_last_winner,
@@ -388,6 +389,7 @@ func (q *Queries) WorldVarsFetch(ctx context.Context) (WorldVar, error) {
 	row := q.db.QueryRowContext(ctx, worldVarsFetch)
 	var i WorldVar
 	err := row.Scan(
+		&i.WvID,
 		&i.LottoCurrentJackpot,
 		&i.LottoYesterdayJackpot,
 		&i.LottoLastPicked,
