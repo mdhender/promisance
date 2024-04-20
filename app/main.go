@@ -81,6 +81,88 @@ var serverCmd = &cobra.Command{
 
 		log.Printf("app: server time zone is %s (logs are UTC)\n", s.tz)
 
+		// temporarily save some routing information. we don't use it, but may.
+		// Valid in-game pages - can be specified for 'location' parameter to load corresponding PHP file
+		// Values denote any special requirements for loading the page
+		valid_locations := map[string]int{
+			// 0 - does not require referer or session
+			"count":       0, // 0 - does not require referer or session
+			"credits":     0, // 0 - does not require referer or session
+			"history":     0, // 0 - does not require referer or session
+			"login":       0, // 0 - does not require referer or session
+			"pguide":      0, // 0 - does not require referer or session
+			"playerstats": 0, // 0 - does not require referer or session
+			"signup":      0, // 0 - does not require referer or session
+			"topclans":    0, // 0 - does not require referer or session
+			"topempires":  0, // 0 - does not require referer or session
+			"topplayers":  0, // 0 - does not require referer or session
+			"relogin":     0, // redirect from login page load; redirects don't set referer, and this could be a bookmark
+
+			// 1 - requires referer from any site
+			"game": 1, // redirect from login page submission; redirects don't set referer
+
+			// 2 - requires referer from in-game, also requires active session
+			"banner":     2, // 2 - requires referer from in-game, also requires active session
+			"guide":      2, // 2 - requires referer from in-game, also requires active session
+			"messages":   2, // 2 - requires referer from in-game, also requires active session
+			"revalidate": 2, // 2 - requires referer from in-game, also requires active session
+			"validate":   2, // 2 - requires referer from in-game, also requires active session
+			"main":       2, // both "relogin" and "game" redirect to here
+
+			// Information
+			"clanstats": 2, // 2 - requires referer from in-game, also requires active session
+			"contacts":  2, // 2 - requires referer from in-game, also requires active session
+			"graveyard": 2, // 2 - requires referer from in-game, also requires active session
+			"news":      2, // 2 - requires referer from in-game, also requires active session
+			"scores":    2, // 2 - requires referer from in-game, also requires active session
+			"search":    2, // 2 - requires referer from in-game, also requires active session
+			"status":    2, // 2 - requires referer from in-game, also requires active session
+
+			// Use Turns
+			"build":    2, // 2 - requires referer from in-game, also requires active session
+			"cash":     2, // 2 - requires referer from in-game, also requires active session
+			"demolish": 2, // 2 - requires referer from in-game, also requires active session
+			"farm":     2, // 2 - requires referer from in-game, also requires active session
+			"land":     2, // 2 - requires referer from in-game, also requires active session
+
+			// Finances
+			"bank":          2, // 2 - requires referer from in-game, also requires active session
+			"lottery":       2, // 2 - requires referer from in-game, also requires active session
+			"pubmarketbuy":  2, // 2 - requires referer from in-game, also requires active session
+			"pubmarketsell": 2, // 2 - requires referer from in-game, also requires active session
+			"pvtmarketbuy":  2, // 2 - requires referer from in-game, also requires active session
+			"pvtmarketsell": 2, // 2 - requires referer from in-game, also requires active session
+
+			// Foreign Affairs
+			"aid":       2, // 2 - requires referer from in-game, also requires active session
+			"clan":      2, // 2 - requires referer from in-game, also requires active session
+			"clanforum": 2, // 2 - requires referer from in-game, also requires active session
+			"magic":     2, // 2 - requires referer from in-game, also requires active session
+			"military":  2, // 2 - requires referer from in-game, also requires active session
+
+			// Management
+			"delete":        2, // 2 - requires referer from in-game, also requires active session
+			"manage/clan":   2, // 2 - requires referer from in-game, also requires active session
+			"manage/empire": 2, // 2 - requires referer from in-game, also requires active session
+			"manage/user":   2, // 2 - requires referer from in-game, also requires active session
+
+			// Administration
+			"admin/clans":       2, // 2 - requires referer from in-game, also requires active session
+			"admin/empedit":     2, // 2 - requires referer from in-game, also requires active session
+			"admin/empires":     2, // 2 - requires referer from in-game, also requires active session
+			"admin/history":     2, // 2 - requires referer from in-game, also requires active session
+			"admin/log":         2, // 2 - requires referer from in-game, also requires active session
+			"admin/market":      2, // 2 - requires referer from in-game, also requires active session
+			"admin/messages":    2, // 2 - requires referer from in-game, also requires active session
+			"admin/permissions": 2, // 2 - requires referer from in-game, also requires active session
+			"admin/round":       2, // 2 - requires referer from in-game, also requires active session
+			"admin/users":       2, // 2 - requires referer from in-game, also requires active session
+
+			// Logout
+			"logout": 2, // 2 - requires referer from in-game, also requires active session
+		}
+		log.Printf("server: todo: implement valid_locations referer logic (%d pages)\n", len(valid_locations))
+
 		handler := s.routes()
 
 		log.Printf("app: serving data from %s\n", s.data)
