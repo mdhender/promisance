@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	_ "embed"
 	"errors"
+	"fmt"
 	"github.com/mdhender/promisance/app/cerr"
 	"github.com/mdhender/promisance/app/orm/sqlc"
 	"github.com/mdhender/semver"
@@ -37,27 +38,58 @@ func (db *DB) Close() error {
 	return err
 }
 
-// OpenSqliteDatabase opens a SQLite database.
-// If the database does not exist, it creates it and
-// runs the data initialization scripts (in other words,
-// it creates and then runs the migration scripts).
-func OpenSqliteDatabase(dbName string) (*DB, error) {
-	// if the database does not exist, create it and migrate it.
-	dbCreate, dbMigrate := false, false
-	if _, err := os.Stat(dbName); err != nil {
-		if !os.IsNotExist(err) {
-			return nil, err
-		}
-		dbCreate, dbMigrate = true, true
+// CreateSqliteDatabase creates the SQLite database and initializes it.
+// It returns an error if the database already exists.
+func CreateSqliteDatabase(dbName string) (*DB, error) {
+	// if the database exist, return an error.
+	if _, err := os.Stat(dbName); err == nil {
+		return nil, fmt.Errorf("database exists")
 	}
 	dbSqlite, err := sql.Open("sqlite", dbName)
 	if err != nil {
 		return nil, err
 	}
-	if dbCreate {
-		log.Printf("orm: created %s", dbName)
-	} else {
-		log.Printf("orm: opened %s", dbName)
+	db := &DB{
+		ctx:      context.Background(),
+		db:       sqlc.New(dbSqlite),
+		dbSqlite: dbSqlite,
+	}
+
+	// confirm that the database has foreign keys enabled
+	var rslt sql.Result
+	checkPragma := "PRAGMA" + " foreign_keys = ON"
+	if rslt, err = dbSqlite.Exec(checkPragma); err != nil {
+		log.Printf("orm: error: foreign keys are disabled\n")
+		return nil, cerr.ErrForeignKeysDisabled
+	} else if rslt == nil {
+		log.Printf("orm: error: foreign keys pragma failed\n")
+		return nil, cerr.ErrPragmaReturnedNil
+	}
+
+	// create the schema
+	log.Printf("orm: creating database schema\n")
+	if _, err = dbSqlite.Exec(ddlScript); err != nil {
+		log.Printf("orm: failed to create database schema\n")
+		return nil, errors.Join(cerr.ErrCreateSchema, err)
+	}
+
+	// todo: this should be the auto-migrate logic
+	log.Printf("orm: todo: migrate database\n")
+
+	log.Printf("orm: created %s", dbName)
+	return db, nil
+}
+
+// OpenSqliteDatabase opens a SQLite database.
+// It returns an error if the database does not exist.
+func OpenSqliteDatabase(dbName string) (*DB, error) {
+	// if the database does not exist, return an error.
+	if _, err := os.Stat(dbName); err != nil {
+		return nil, err
+	}
+	dbSqlite, err := sql.Open("sqlite", dbName)
+	if err != nil {
+		return nil, err
 	}
 	db := &DB{
 		ctx:      context.Background(),
@@ -77,17 +109,8 @@ func OpenSqliteDatabase(dbName string) (*DB, error) {
 	}
 
 	// todo: this should be the auto-migrate logic
-	// create the schema if needed
-	if dbCreate {
-		log.Printf("orm: initializing database\n")
-		if _, err = dbSqlite.Exec(ddlScript); err != nil {
-			log.Printf("orm: failed to initialize schema\n")
-			return nil, errors.Join(cerr.ErrCreateSchema, err)
-		}
-	}
-	if dbMigrate {
-		log.Printf("orm: todo: migrate database\n")
-	}
+	log.Printf("orm: todo: migrate database\n")
 
+	log.Printf("orm: opened database %s", dbName)
 	return db, nil
 }

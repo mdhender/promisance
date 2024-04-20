@@ -75,6 +75,20 @@ var serverCmd = &cobra.Command{
 	Short: "start the web server",
 	Long:  `Start the web server.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		// verify data path
+		if serverArgs.data = strings.TrimSpace(serverArgs.data); setupArgs.data == "" {
+			log.Fatal("error: no data path specified\n")
+		} else if path, err := filepath.Abs(serverArgs.data); err != nil {
+			log.Fatalf("error: data: %v\n", err)
+		} else if sb, err := os.Stat(path); err != nil {
+			log.Fatalf("error: data: %s: no such directory\n", serverArgs.data)
+		} else if !sb.IsDir() {
+			log.Fatalf("error: data: %s: not a directory\n", serverArgs.data)
+		} else {
+			serverArgs.data = path
+		}
+		log.Printf("server: data %s\n", setupArgs.data)
+
 		s := &server{host: "localhost", port: "8080"}
 		s.addr = net.JoinHostPort(s.host, s.port)
 		s.tz, _ = time.Now().Zone()
@@ -165,8 +179,28 @@ var serverCmd = &cobra.Command{
 
 		handler := s.routes()
 
-		log.Printf("app: serving data from %s\n", s.data)
-		log.Printf("app: serving on http://%s\n", s.addr)
+		dbFile := filepath.Join(serverArgs.data, "promisance.sqlite")
+		log.Printf("server: connecting to database: %s\n", dbFile)
+		var err error
+		s.db, err = orm.OpenSqliteDatabase(dbFile)
+		if err != nil {
+			log.Fatalf("server: database: %v\n", err)
+		}
+		defer func() {
+			if err := s.db.Close(); err != nil {
+				log.Printf("server: db close failed: %v\n", err)
+			}
+			log.Printf("server: db closed\n")
+		}()
+
+		// world data is a one time load that is shared with all the handlers
+		s.world, err = s.db.WorldVarsFetch()
+		if err != nil {
+			log.Fatalf("server: failed to fetch vars: %v\n", err)
+		}
+		log.Printf("server: fetched world variables\n")
+
+		log.Printf("server: serving on http://%s\n", s.addr)
 		log.Fatalln(http.ListenAndServe(s.addr, handler))
 	},
 }
@@ -353,7 +387,7 @@ var setupCmd = &cobra.Command{
 
 		// load the database initialization script and run it
 		log.Printf("setup: running database initialization\n")
-		db, err := orm.OpenSqliteDatabase(dbFile)
+		db, err := orm.CreateSqliteDatabase(dbFile)
 		if err != nil {
 			log.Fatalf("setup: failed to open database: %v\n", err)
 		}

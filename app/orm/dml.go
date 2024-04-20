@@ -306,6 +306,26 @@ func (db *DB) UserPasswordUpdate(user *model.User_t) error {
 	return nil
 }
 
+func (db *DB) WorldVarsFetch() (*model.World_t, error) {
+	row, err := db.db.WorldVarsFetch(db.ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &model.World_t{
+		LottoCurrentJackpot:   int(row.LottoCurrentJackpot),
+		LottoYesterdayJackpot: int(row.LottoYesterdayJackpot),
+		LottoLastPicked:       int(row.LottoLastPicked),
+		LottoLastWinner:       int(row.LottoLastWinner),
+		LottoJackpotIncrease:  int(row.LottoJackpotIncrease),
+		RoundTimeBegin:        row.RoundTimeBegin,
+		RoundTimeClosing:      row.RoundTimeClosing,
+		RoundTimeEnd:          row.RoundTimeEnd,
+		TurnsNext:             row.TurnsNext,
+		TurnsNextHourly:       row.TurnsNextHourly,
+		TurnsNextDaily:        row.TurnsNextDaily,
+	}, nil
+}
+
 func (db *DB) WorldVarsInitialize(world *model.World_t) error {
 	parms := sqlc.WorldVarsInitializeParams{
 		LottoCurrentJackpot:   int64(world.LottoCurrentJackpot),
