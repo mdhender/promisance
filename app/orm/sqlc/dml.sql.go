@@ -8,6 +8,7 @@ package sqlc
 import (
 	"context"
 	"database/sql"
+	"time"
 )
 
 const clanFetch = `-- name: ClanFetch :one
@@ -45,6 +46,190 @@ func (q *Queries) ClanFetch(ctx context.Context, cID int64) (Clan, error) {
 		&i.CPic,
 	)
 	return i, err
+}
+
+const empireAttributesUpdate = `-- name: EmpireAttributesUpdate :exec
+UPDATE empire
+SET e_flags       = ?,
+    e_valcode     = ?,
+    e_reason      = ?,
+    e_vacation    = ?,
+    e_idle        = ?,
+    e_era         = ?,
+    e_rank        = ?,
+    e_sharing     = ?,
+    e_attacks     = ?,
+    e_offsucc     = ?,
+    e_offtotal    = ?,
+    e_defsucc     = ?,
+    e_deftotal    = ?,
+    e_kills       = ?,
+    e_score       = ?,
+    e_killedby    = ?,
+    e_killclan    = ?,
+    e_turns       = ?,
+    e_storedturns = ?,
+    e_turnsused   = ?,
+    e_networth    = ?,
+    e_cash        = ?,
+    e_food        = ?,
+    e_peasants    = ?,
+    e_trparm      = ?,
+    e_trplnd      = ?,
+    e_trpfly      = ?,
+    e_trpsea      = ?,
+    e_trpwiz      = ?,
+    e_health      = ?,
+    e_runes       = ?,
+    e_indarm      = ?,
+    e_indlnd      = ?,
+    e_indfly      = ?,
+    e_indsea      = ?,
+    e_land        = ?,
+    e_bldpop      = ?,
+    e_bldcash     = ?,
+    e_bldtrp      = ?,
+    e_bldcost     = ?,
+    e_bldwiz      = ?,
+    e_bldfood     = ?,
+    e_blddef      = ?,
+    e_freeland    = ?,
+    e_tax         = ?,
+    e_bank        = ?,
+    e_loan        = ?,
+    e_mktarm      = ?,
+    e_mktlnd      = ?,
+    e_mktfly      = ?,
+    e_mktsea      = ?,
+    e_mktfood     = ?,
+    e_mktperarm   = ?,
+    e_mktperlnd   = ?,
+    e_mktperfly   = ?,
+    e_mktpersea   = ?
+WHERE e_id = ?
+`
+
+type EmpireAttributesUpdateParams struct {
+	EFlags       sql.NullInt64
+	EValcode     sql.NullString
+	EReason      sql.NullString
+	EVacation    sql.NullInt64
+	EIdle        sql.NullInt64
+	EEra         sql.NullInt64
+	ERank        sql.NullInt64
+	ESharing     sql.NullInt64
+	EAttacks     sql.NullInt64
+	EOffsucc     sql.NullInt64
+	EOfftotal    sql.NullInt64
+	EDefsucc     sql.NullInt64
+	EDeftotal    sql.NullInt64
+	EKills       sql.NullInt64
+	EScore       sql.NullInt64
+	EKilledby    sql.NullInt64
+	EKillclan    sql.NullInt64
+	ETurns       sql.NullInt64
+	EStoredturns sql.NullInt64
+	ETurnsused   sql.NullInt64
+	ENetworth    sql.NullInt64
+	ECash        sql.NullInt64
+	EFood        sql.NullInt64
+	EPeasants    sql.NullInt64
+	ETrparm      sql.NullInt64
+	ETrplnd      sql.NullInt64
+	ETrpfly      sql.NullInt64
+	ETrpsea      sql.NullInt64
+	ETrpwiz      sql.NullInt64
+	EHealth      sql.NullInt64
+	ERunes       sql.NullInt64
+	EIndarm      sql.NullInt64
+	EIndlnd      sql.NullInt64
+	EIndfly      sql.NullInt64
+	EIndsea      sql.NullInt64
+	ELand        sql.NullInt64
+	EBldpop      sql.NullInt64
+	EBldcash     sql.NullInt64
+	EBldtrp      sql.NullInt64
+	EBldcost     sql.NullInt64
+	EBldwiz      sql.NullInt64
+	EBldfood     sql.NullInt64
+	EBlddef      sql.NullInt64
+	EFreeland    sql.NullInt64
+	ETax         sql.NullInt64
+	EBank        sql.NullInt64
+	ELoan        sql.NullInt64
+	EMktarm      sql.NullInt64
+	EMktlnd      sql.NullInt64
+	EMktfly      sql.NullInt64
+	EMktsea      sql.NullInt64
+	EMktfood     sql.NullInt64
+	EMktperarm   sql.NullInt64
+	EMktperlnd   sql.NullInt64
+	EMktperfly   sql.NullInt64
+	EMktpersea   sql.NullInt64
+	EID          int64
+}
+
+func (q *Queries) EmpireAttributesUpdate(ctx context.Context, arg EmpireAttributesUpdateParams) error {
+	_, err := q.db.ExecContext(ctx, empireAttributesUpdate,
+		arg.EFlags,
+		arg.EValcode,
+		arg.EReason,
+		arg.EVacation,
+		arg.EIdle,
+		arg.EEra,
+		arg.ERank,
+		arg.ESharing,
+		arg.EAttacks,
+		arg.EOffsucc,
+		arg.EOfftotal,
+		arg.EDefsucc,
+		arg.EDeftotal,
+		arg.EKills,
+		arg.EScore,
+		arg.EKilledby,
+		arg.EKillclan,
+		arg.ETurns,
+		arg.EStoredturns,
+		arg.ETurnsused,
+		arg.ENetworth,
+		arg.ECash,
+		arg.EFood,
+		arg.EPeasants,
+		arg.ETrparm,
+		arg.ETrplnd,
+		arg.ETrpfly,
+		arg.ETrpsea,
+		arg.ETrpwiz,
+		arg.EHealth,
+		arg.ERunes,
+		arg.EIndarm,
+		arg.EIndlnd,
+		arg.EIndfly,
+		arg.EIndsea,
+		arg.ELand,
+		arg.EBldpop,
+		arg.EBldcash,
+		arg.EBldtrp,
+		arg.EBldcost,
+		arg.EBldwiz,
+		arg.EBldfood,
+		arg.EBlddef,
+		arg.EFreeland,
+		arg.ETax,
+		arg.EBank,
+		arg.ELoan,
+		arg.EMktarm,
+		arg.EMktlnd,
+		arg.EMktfly,
+		arg.EMktsea,
+		arg.EMktfood,
+		arg.EMktperarm,
+		arg.EMktperlnd,
+		arg.EMktperfly,
+		arg.EMktpersea,
+		arg.EID,
+	)
+	return err
 }
 
 const empireCreate = `-- name: EmpireCreate :one
@@ -182,4 +367,122 @@ func (q *Queries) UserPasswordUpdate(ctx context.Context, arg UserPasswordUpdate
 	var u_lastdate sql.NullTime
 	err := row.Scan(&u_lastdate)
 	return u_lastdate, err
+}
+
+const worldVarsFetch = `-- name: WorldVarsFetch :one
+SELECT lotto_current_jackpot,
+       lotto_yesterday_jackpot,
+       lotto_last_picked,
+       lotto_last_winner,
+       lotto_jackpot_increase,
+       round_time_begin,
+       round_time_closing,
+       round_time_end,
+       turns_next,
+       turns_next_hourly,
+       turns_next_daily
+FROM world_vars
+`
+
+func (q *Queries) WorldVarsFetch(ctx context.Context) (WorldVar, error) {
+	row := q.db.QueryRowContext(ctx, worldVarsFetch)
+	var i WorldVar
+	err := row.Scan(
+		&i.LottoCurrentJackpot,
+		&i.LottoYesterdayJackpot,
+		&i.LottoLastPicked,
+		&i.LottoLastWinner,
+		&i.LottoJackpotIncrease,
+		&i.RoundTimeBegin,
+		&i.RoundTimeClosing,
+		&i.RoundTimeEnd,
+		&i.TurnsNext,
+		&i.TurnsNextHourly,
+		&i.TurnsNextDaily,
+	)
+	return i, err
+}
+
+const worldVarsInitialize = `-- name: WorldVarsInitialize :exec
+INSERT INTO world_vars(lotto_current_jackpot, lotto_yesterday_jackpot, lotto_last_picked, lotto_last_winner,
+                       lotto_jackpot_increase, round_time_begin, round_time_closing, round_time_end, turns_next,
+                       turns_next_hourly, turns_next_daily)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`
+
+type WorldVarsInitializeParams struct {
+	LottoCurrentJackpot   int64
+	LottoYesterdayJackpot int64
+	LottoLastPicked       int64
+	LottoLastWinner       int64
+	LottoJackpotIncrease  int64
+	RoundTimeBegin        time.Time
+	RoundTimeClosing      time.Time
+	RoundTimeEnd          time.Time
+	TurnsNext             time.Time
+	TurnsNextHourly       time.Time
+	TurnsNextDaily        time.Time
+}
+
+func (q *Queries) WorldVarsInitialize(ctx context.Context, arg WorldVarsInitializeParams) error {
+	_, err := q.db.ExecContext(ctx, worldVarsInitialize,
+		arg.LottoCurrentJackpot,
+		arg.LottoYesterdayJackpot,
+		arg.LottoLastPicked,
+		arg.LottoLastWinner,
+		arg.LottoJackpotIncrease,
+		arg.RoundTimeBegin,
+		arg.RoundTimeClosing,
+		arg.RoundTimeEnd,
+		arg.TurnsNext,
+		arg.TurnsNextHourly,
+		arg.TurnsNextDaily,
+	)
+	return err
+}
+
+const worldVarsUpdate = `-- name: WorldVarsUpdate :exec
+UPDATE world_vars
+SET lotto_current_jackpot   = ?,
+    lotto_yesterday_jackpot = ?,
+    lotto_last_picked       = ?,
+    lotto_last_winner       = ?,
+    lotto_jackpot_increase  = ?,
+    round_time_begin        = ?,
+    round_time_closing      = ?,
+    round_time_end          = ?,
+    turns_next              = ?,
+    turns_next_hourly       = ?,
+    turns_next_daily        = ?
+`
+
+type WorldVarsUpdateParams struct {
+	LottoCurrentJackpot   int64
+	LottoYesterdayJackpot int64
+	LottoLastPicked       int64
+	LottoLastWinner       int64
+	LottoJackpotIncrease  int64
+	RoundTimeBegin        time.Time
+	RoundTimeClosing      time.Time
+	RoundTimeEnd          time.Time
+	TurnsNext             time.Time
+	TurnsNextHourly       time.Time
+	TurnsNextDaily        time.Time
+}
+
+func (q *Queries) WorldVarsUpdate(ctx context.Context, arg WorldVarsUpdateParams) error {
+	_, err := q.db.ExecContext(ctx, worldVarsUpdate,
+		arg.LottoCurrentJackpot,
+		arg.LottoYesterdayJackpot,
+		arg.LottoLastPicked,
+		arg.LottoLastWinner,
+		arg.LottoJackpotIncrease,
+		arg.RoundTimeBegin,
+		arg.RoundTimeClosing,
+		arg.RoundTimeEnd,
+		arg.TurnsNext,
+		arg.TurnsNextHourly,
+		arg.TurnsNextDaily,
+	)
+	return err
 }

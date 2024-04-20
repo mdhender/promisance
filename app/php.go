@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/mdhender/promisance/app/model"
 	"github.com/syyongx/php2go"
 	"log"
 	"net/http"
@@ -39,7 +40,7 @@ type PHP struct {
 		tables          map[string]string
 		timezones       map[int]string
 		styles          map[string]css_file_t
-		world           *world_t
+		world           *model.World_t
 	}
 	required map[string]bool
 }
@@ -50,19 +51,6 @@ type banner_t struct {
 type css_file_t struct {
 	file string
 	name string
-}
-type world_t struct {
-	lotto_current_jackpot   int
-	lotto_yesterday_jackpot int
-	lotto_last_picked       int
-	lotto_last_winner       int
-	lotto_jackpot_increase  int
-	round_time_begin        time.Time
-	round_time_closing      time.Time
-	round_time_end          time.Time
-	turns_next              time.Time
-	turns_next_hourly       time.Time
-	turns_next_daily        time.Time
 }
 
 func newInstance(w http.ResponseWriter, r *http.Request) (*PHP, error) {

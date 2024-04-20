@@ -398,3 +398,19 @@ CREATE TABLE var_adjust
     v_name   varbinary(255) NOT NULL DEFAULT '',
     v_offset bigint         NOT NULL DEFAULT 0
 );
+
+DROP TABLE IF EXISTS world_vars;
+CREATE TABLE world_vars
+(
+    lotto_current_jackpot   INTEGER   NOT NULL,
+    lotto_yesterday_jackpot INTEGER   NOT NULL,
+    lotto_last_picked       INTEGER   NOT NULL,
+    lotto_last_winner       INTEGER   NOT NULL,
+    lotto_jackpot_increase  INTEGER   NOT NULL,
+    round_time_begin        TIMESTAMP NOT NULL,
+    round_time_closing      TIMESTAMP NOT NULL,
+    round_time_end          TIMESTAMP NOT NULL,
+    turns_next              TIMESTAMP NOT NULL,
+    turns_next_hourly       TIMESTAMP NOT NULL,
+    turns_next_daily        TIMESTAMP NOT NULL
+);

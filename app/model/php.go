@@ -124,3 +124,17 @@ type UserFlag_t struct {
 	// user account is suspected of abuse
 	Watch bool
 }
+
+type World_t struct {
+	LottoCurrentJackpot   int
+	LottoYesterdayJackpot int
+	LottoLastPicked       int
+	LottoLastWinner       int
+	LottoJackpotIncrease  int
+	RoundTimeBegin        time.Time
+	RoundTimeClosing      time.Time
+	RoundTimeEnd          time.Time
+	TurnsNext             time.Time
+	TurnsNextHourly       time.Time
+	TurnsNextDaily        time.Time
+}

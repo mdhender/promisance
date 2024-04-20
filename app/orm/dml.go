@@ -107,6 +107,101 @@ func (db *DB) EmpireCreate(user *model.User_t, name string, race string) (*model
 	return &empire, nil
 }
 
+func (db *DB) EmpireAttributesUpdate(empire *model.Empire_t) error {
+	var flags int64
+	if empire.Flags.Admin {
+		flags |= EFLAG_ADMIN
+	}
+	if empire.Flags.Delete {
+		flags |= EFLAG_DELETE
+	}
+	if empire.Flags.Disable {
+		flags |= EFLAG_DISABLE
+	}
+	if empire.Flags.Logged {
+		flags |= EFLAG_LOGGED
+	}
+	if empire.Flags.Mod {
+		flags |= EFLAG_MOD
+	}
+	if empire.Flags.Multi {
+		flags |= EFLAG_MULTI
+	}
+	if empire.Flags.Notify {
+		flags |= EFLAG_NOTIFY
+	}
+	if empire.Flags.Online {
+		flags |= EFLAG_ONLINE
+	}
+	if empire.Flags.Silent {
+		flags |= EFLAG_SILENT
+	}
+	if empire.Flags.Valid {
+		flags |= EFLAG_VALID
+	}
+
+	parms := sqlc.EmpireAttributesUpdateParams{
+		EID:          int64(empire.Id),
+		EFlags:       sql.NullInt64{Valid: true, Int64: flags},
+		EValcode:     sql.NullString{Valid: true, String: empire.ValCode},
+		EReason:      sql.NullString{Valid: true, String: empire.Reason},
+		EVacation:    sql.NullInt64{Valid: true, Int64: int64(empire.Vacation)},
+		EIdle:        sql.NullInt64{Valid: true, Int64: int64(empire.Idle)},
+		EEra:         sql.NullInt64{Valid: true, Int64: int64(empire.Era)},
+		ERank:        sql.NullInt64{Valid: true, Int64: int64(empire.Rank)},
+		ESharing:     sql.NullInt64{Valid: true, Int64: int64(empire.Sharing)},
+		EAttacks:     sql.NullInt64{Valid: true, Int64: int64(empire.Attacks)},
+		EOffsucc:     sql.NullInt64{Valid: true, Int64: int64(empire.OffSucc)},
+		EOfftotal:    sql.NullInt64{Valid: true, Int64: int64(empire.OffTotal)},
+		EDefsucc:     sql.NullInt64{Valid: true, Int64: int64(empire.DefSucc)},
+		EDeftotal:    sql.NullInt64{Valid: true, Int64: int64(empire.DefTotal)},
+		EKills:       sql.NullInt64{Valid: true, Int64: int64(empire.Kills)},
+		EScore:       sql.NullInt64{Valid: true, Int64: int64(empire.Score)},
+		EKilledby:    sql.NullInt64{Valid: true, Int64: int64(empire.KilledBy)},
+		EKillclan:    sql.NullInt64{Valid: true, Int64: int64(empire.KillClan)},
+		ETurns:       sql.NullInt64{Valid: true, Int64: int64(empire.Turns)},
+		EStoredturns: sql.NullInt64{Valid: true, Int64: int64(empire.StoredTurns)},
+		ETurnsused:   sql.NullInt64{Valid: true, Int64: int64(empire.TurnsUsed)},
+		ENetworth:    sql.NullInt64{Valid: true, Int64: int64(empire.NetWorth)},
+		ECash:        sql.NullInt64{Valid: true, Int64: int64(empire.Cash)},
+		EFood:        sql.NullInt64{Valid: true, Int64: int64(empire.Food)},
+		EPeasants:    sql.NullInt64{Valid: true, Int64: int64(empire.Peasants)},
+		ETrparm:      sql.NullInt64{Valid: true, Int64: int64(empire.TrpArm)},
+		ETrplnd:      sql.NullInt64{Valid: true, Int64: int64(empire.TrpLnd)},
+		ETrpfly:      sql.NullInt64{Valid: true, Int64: int64(empire.TrpFly)},
+		ETrpsea:      sql.NullInt64{Valid: true, Int64: int64(empire.TrpSea)},
+		ETrpwiz:      sql.NullInt64{Valid: true, Int64: int64(empire.TrpWiz)},
+		EHealth:      sql.NullInt64{Valid: true, Int64: int64(empire.Health)},
+		ERunes:       sql.NullInt64{Valid: true, Int64: int64(empire.Runes)},
+		EIndarm:      sql.NullInt64{Valid: true, Int64: int64(empire.IndArm)},
+		EIndlnd:      sql.NullInt64{Valid: true, Int64: int64(empire.IndLnd)},
+		EIndfly:      sql.NullInt64{Valid: true, Int64: int64(empire.IndFly)},
+		EIndsea:      sql.NullInt64{Valid: true, Int64: int64(empire.IndSea)},
+		ELand:        sql.NullInt64{Valid: true, Int64: int64(empire.Land)},
+		EBldpop:      sql.NullInt64{Valid: true, Int64: int64(empire.BldPop)},
+		EBldcash:     sql.NullInt64{Valid: true, Int64: int64(empire.BldCash)},
+		EBldtrp:      sql.NullInt64{Valid: true, Int64: int64(empire.BldTrp)},
+		EBldcost:     sql.NullInt64{Valid: true, Int64: int64(empire.BldCost)},
+		EBldwiz:      sql.NullInt64{Valid: true, Int64: int64(empire.BldWiz)},
+		EBldfood:     sql.NullInt64{Valid: true, Int64: int64(empire.BldFood)},
+		EBlddef:      sql.NullInt64{Valid: true, Int64: int64(empire.BldDef)},
+		EFreeland:    sql.NullInt64{Valid: true, Int64: int64(empire.Freeland)},
+		ETax:         sql.NullInt64{Valid: true, Int64: int64(empire.Tax)},
+		EBank:        sql.NullInt64{Valid: true, Int64: int64(empire.Bank)},
+		ELoan:        sql.NullInt64{Valid: true, Int64: int64(empire.Loan)},
+		EMktarm:      sql.NullInt64{Valid: true, Int64: int64(empire.MktArm)},
+		EMktlnd:      sql.NullInt64{Valid: true, Int64: int64(empire.MktLnd)},
+		EMktfly:      sql.NullInt64{Valid: true, Int64: int64(empire.MktFly)},
+		EMktsea:      sql.NullInt64{Valid: true, Int64: int64(empire.MktSea)},
+		EMktfood:     sql.NullInt64{Valid: true, Int64: int64(empire.MktFood)},
+		EMktperarm:   sql.NullInt64{Valid: true, Int64: int64(empire.MktPerArm)},
+		EMktperlnd:   sql.NullInt64{Valid: true, Int64: int64(empire.MktPerLnd)},
+		EMktperfly:   sql.NullInt64{Valid: true, Int64: int64(empire.MktPerFly)},
+		EMktpersea:   sql.NullInt64{Valid: true, Int64: int64(empire.MktPerSea)},
+	}
+	return db.db.EmpireAttributesUpdate(db.ctx, parms)
+}
+
 func (db *DB) UserCreate(userName, email string) (*model.User_t, error) {
 	if userName == "" {
 		return nil, fmt.Errorf("username must not be blank")
@@ -209,6 +304,40 @@ func (db *DB) UserPasswordUpdate(user *model.User_t) error {
 		user.LastDate = lastDate.Time
 	}
 	return nil
+}
+
+func (db *DB) WorldVarsInitialize(world *model.World_t) error {
+	parms := sqlc.WorldVarsInitializeParams{
+		LottoCurrentJackpot:   int64(world.LottoCurrentJackpot),
+		LottoYesterdayJackpot: int64(world.LottoYesterdayJackpot),
+		LottoLastPicked:       int64(world.LottoLastPicked),
+		LottoLastWinner:       int64(world.LottoLastWinner),
+		LottoJackpotIncrease:  int64(world.LottoJackpotIncrease),
+		RoundTimeBegin:        world.RoundTimeBegin,
+		RoundTimeClosing:      world.RoundTimeClosing,
+		RoundTimeEnd:          world.RoundTimeEnd,
+		TurnsNext:             world.TurnsNext,
+		TurnsNextHourly:       world.TurnsNextHourly,
+		TurnsNextDaily:        world.TurnsNextDaily,
+	}
+	return db.db.WorldVarsInitialize(db.ctx, parms)
+}
+
+func (db *DB) WorldVarsUpdate(world *model.World_t) error {
+	parms := sqlc.WorldVarsUpdateParams{
+		LottoCurrentJackpot:   int64(world.LottoCurrentJackpot),
+		LottoYesterdayJackpot: int64(world.LottoYesterdayJackpot),
+		LottoLastPicked:       int64(world.LottoLastPicked),
+		LottoLastWinner:       int64(world.LottoLastWinner),
+		LottoJackpotIncrease:  int64(world.LottoJackpotIncrease),
+		RoundTimeBegin:        world.RoundTimeBegin,
+		RoundTimeClosing:      world.RoundTimeClosing,
+		RoundTimeEnd:          world.RoundTimeEnd,
+		TurnsNext:             world.TurnsNext,
+		TurnsNextHourly:       world.TurnsNextHourly,
+		TurnsNextDaily:        world.TurnsNextDaily,
+	}
+	return db.db.WorldVarsUpdate(db.ctx, parms)
 }
 
 func isValidEmailAddress(address string) bool {

@@ -321,20 +321,23 @@ var setupCmd = &cobra.Command{
 			log.Printf("setup: database closed %q\n", dbFile)
 		}()
 
-		world := &world_t{
-			lotto_current_jackpot:   LOTTERY_JACKPOT,
-			lotto_yesterday_jackpot: LOTTERY_JACKPOT,
-			lotto_last_picked:       0,
-			lotto_last_winner:       0,
-			lotto_jackpot_increase:  0,
-			round_time_begin:        roundBegin,
-			round_time_closing:      roundClosing,
-			round_time_end:          roundEnd,
-			turns_next:              roundBegin.Add(TURNS_OFFSET * 60 * time.Second),
-			turns_next_hourly:       roundBegin.Add(TURNS_OFFSET_HOURLY * 60 * time.Hour),
-			turns_next_daily:        roundBegin.Add(TURNS_OFFSET_DAILY * 24 * 60 * time.Hour),
+		world := &model.World_t{
+			LottoCurrentJackpot:   LOTTERY_JACKPOT,
+			LottoYesterdayJackpot: LOTTERY_JACKPOT,
+			LottoLastPicked:       0,
+			LottoLastWinner:       0,
+			LottoJackpotIncrease:  0,
+			RoundTimeBegin:        roundBegin,
+			RoundTimeClosing:      roundClosing,
+			RoundTimeEnd:          roundEnd,
+			TurnsNext:             roundBegin.Add(TURNS_OFFSET * 60 * time.Second),
+			TurnsNextHourly:       roundBegin.Add(TURNS_OFFSET_HOURLY * 60 * time.Hour),
+			TurnsNextDaily:        roundBegin.Add(TURNS_OFFSET_DAILY * 24 * 60 * time.Hour),
 		}
-		log.Printf("setup: todo: world.save() %v\n", world)
+		if err := db.WorldVarsInitialize(world); err != nil {
+			log.Fatalf("setup: failed to initialize world variables: %v\n", err)
+		}
+		log.Printf("setup: created world variables\n")
 
 		// persist these to the database
 		user, err := db.UserCreate(cfg.Administrator.UserName, cfg.Administrator.Email)
@@ -358,6 +361,9 @@ var setupCmd = &cobra.Command{
 			log.Fatalf("setup: failed to create empire: %v\n", err)
 		}
 		empire.Flags = model.EmpireFlag_t{Admin: true, Mod: true}
+		if err := db.EmpireAttributesUpdate(empire); err != nil {
+			log.Fatalf("setup: failed to update empire: %v\n", err)
+		}
 		log.Printf("setup: created empire %q\n", empire.Name)
 
 		log.Printf("setup: completed in %v\n", time.Now().Sub(startedAt))

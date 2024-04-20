@@ -6,6 +6,7 @@ package sqlc
 
 import (
 	"database/sql"
+	"time"
 )
 
 type Clan struct {
@@ -311,4 +312,18 @@ type Var struct {
 type VarAdjust struct {
 	VName   interface{}
 	VOffset int64
+}
+
+type WorldVar struct {
+	LottoCurrentJackpot   int64
+	LottoYesterdayJackpot int64
+	LottoLastPicked       int64
+	LottoLastWinner       int64
+	LottoJackpotIncrease  int64
+	RoundTimeBegin        time.Time
+	RoundTimeClosing      time.Time
+	RoundTimeEnd          time.Time
+	TurnsNext             time.Time
+	TurnsNextHourly       time.Time
+	TurnsNextDaily        time.Time
 }
