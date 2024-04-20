@@ -32,18 +32,6 @@ const (
 	ERA_PAST    = 1
 	ERA_PRESENT = 2
 
-	// php/classes/prom_race.php
-
-	RACE_DROW    = 8
-	RACE_DWARF   = 3
-	RACE_ELF     = 2
-	RACE_GNOME   = 5
-	RACE_GOBLIN  = 9
-	RACE_GREMLIN = 6
-	RACE_HUMAN   = 1
-	RACE_ORC     = 7
-	RACE_TROLL   = 4
-
 	// php/classes/prom_session.php
 
 	SESSION_COOKIE = "prom_session"

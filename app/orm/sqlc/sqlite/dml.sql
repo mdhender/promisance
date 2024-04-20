@@ -15,6 +15,11 @@ SELECT c_id,
 FROM clan
 WHERE c_id = ?;
 
+-- name: EmpireCreate :one
+INSERT INTO empire (u_id, e_name, e_race)
+VALUES (?, ?, ?)
+RETURNING e_id;
+
 -- name: UserCreate :one
 INSERT INTO users (u_username, u_email, u_createdate, u_lastdate)
 VALUES (?, ?, datetime('now'), datetime('now'))

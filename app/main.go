@@ -334,15 +334,7 @@ var setupCmd = &cobra.Command{
 			turns_next_hourly:       roundBegin.Add(TURNS_OFFSET_HOURLY * 60 * time.Hour),
 			turns_next_daily:        roundBegin.Add(TURNS_OFFSET_DAILY * 24 * 60 * time.Hour),
 		}
-		emp := &empire_t{
-			id:   0,
-			name: cfg.Administrator.EmpireName,
-			race: RACE_HUMAN,
-			flags: empire_flag_t{
-				admin: true,
-				valid: true,
-			},
-		}
+		log.Printf("setup: todo: world.save() %v\n", world)
 
 		// persist these to the database
 		user, err := db.UserCreate(cfg.Administrator.UserName, cfg.Administrator.Email)
@@ -361,8 +353,12 @@ var setupCmd = &cobra.Command{
 		}
 		log.Printf("setup: created administrator %q\n", user.UserName)
 
-		log.Printf("setup: todo: emp.save() %v\n", emp)
-		log.Printf("setup: todo: world.save() %v\n", world)
+		empire, err := db.EmpireCreate(user, cfg.Administrator.EmpireName, "HUMAN")
+		if err != nil {
+			log.Fatalf("setup: failed to create empire: %v\n", err)
+		}
+		empire.Flags = model.EmpireFlag_t{Admin: true, Mod: true}
+		log.Printf("setup: created empire %q\n", empire.Name)
 
 		log.Printf("setup: completed in %v\n", time.Now().Sub(startedAt))
 	},

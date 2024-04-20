@@ -47,6 +47,25 @@ func (q *Queries) ClanFetch(ctx context.Context, cID int64) (Clan, error) {
 	return i, err
 }
 
+const empireCreate = `-- name: EmpireCreate :one
+INSERT INTO empire (u_id, e_name, e_race)
+VALUES (?, ?, ?)
+RETURNING e_id
+`
+
+type EmpireCreateParams struct {
+	UID   int64
+	EName string
+	ERace int64
+}
+
+func (q *Queries) EmpireCreate(ctx context.Context, arg EmpireCreateParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, empireCreate, arg.UID, arg.EName, arg.ERace)
+	var e_id int64
+	err := row.Scan(&e_id)
+	return e_id, err
+}
+
 const userAttributesUpdate = `-- name: UserAttributesUpdate :one
 UPDATE users
 SET u_flags      = ?,

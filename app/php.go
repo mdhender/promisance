@@ -51,61 +51,6 @@ type css_file_t struct {
 	file string
 	name string
 }
-type empire_t struct {
-	id    int
-	name  string
-	race  int
-	flags empire_flag_t
-}
-type empire_flag_t struct {
-	// Unused
-	mod bool
-	// Empire is owned by moderator/administrator and cannot interact with other empires
-	admin bool
-	// Empire is disabled
-	disable bool
-	// Empire has submitted their validation code
-	valid bool
-	// Empire is flagged for deletion
-	delete bool
-	// Empire is one of multiple accounts being accessed from the same location (legally or not)
-	multi bool
-	// Empire is in a notification state and cannot perform actions (and will not update idle time)
-	notify bool
-	// Empire is currently logged in
-	online bool
-	// Empire is prohibited from sending private messages to non-Administrators
-	silent bool
-	// All actions performed by empire are logged with a special event code
-	logged bool
-}
-type user_t struct {
-	id         int
-	userName   string
-	password   string
-	flags      user_flag_t
-	nickname   string
-	email      string
-	lang       string
-	dateformat string
-	lastIP     string
-	createDate time.Time
-	lastDate   time.Time
-}
-type user_flag_t struct {
-	// user has Moderator privileges (can set/clear multi and disabled flags, can browse empire messages)
-	mod bool
-	// user has Administrator privileges (can grant/revoke privileges, delete/rename empires, login as anyone, edit clans)
-	admin bool
-	// user account is disabled, cannot create new empires (but can still login to existing ones)
-	disabled bool
-	// user account's email address has been validated at least once
-	valid bool
-	// user account has been voluntarily closed, cannot create new empires or login to existing ones
-	closed bool
-	// user account is suspected of abuse
-	watch bool
-}
 type world_t struct {
 	lotto_current_jackpot   int
 	lotto_yesterday_jackpot int
