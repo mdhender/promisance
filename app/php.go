@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"github.com/syyongx/php2go"
 	"log"
+	"net/http"
+	"net/url"
 	"os"
 	"time"
 )
@@ -17,8 +19,16 @@ const (
 
 // PHP implements a wrapper for the manually converted PHP code.
 type PHP struct {
-	constants map[string]any
-	globals   struct {
+	// constant per instance, not per server
+	constants struct {
+		CUR_TIME     time.Time
+		IN_GAME      bool
+		IN_SETUP     bool
+		PROM_BASEDIR string
+		REQUEST_URI  *url.URL
+	}
+
+	globals struct {
 		banners         []banner_t
 		cur_lang        string
 		empire_defaults map[string]int
@@ -29,10 +39,7 @@ type PHP struct {
 		tables          map[string]string
 		timezones       map[int]string
 		styles          map[string]css_file_t
-
-		CUR_TIME     time.Time
-		IN_GAME      bool
-		PROM_BASEDIR string
+		world           *world_t
 	}
 	required map[string]bool
 }
@@ -44,11 +51,81 @@ type css_file_t struct {
 	file string
 	name string
 }
+type empire_t struct {
+	id    int
+	name  string
+	race  int
+	flags empire_flag_t
+}
+type empire_flag_t struct {
+	// Unused
+	mod bool
+	// Empire is owned by moderator/administrator and cannot interact with other empires
+	admin bool
+	// Empire is disabled
+	disable bool
+	// Empire has submitted their validation code
+	valid bool
+	// Empire is flagged for deletion
+	delete bool
+	// Empire is one of multiple accounts being accessed from the same location (legally or not)
+	multi bool
+	// Empire is in a notification state and cannot perform actions (and will not update idle time)
+	notify bool
+	// Empire is currently logged in
+	online bool
+	// Empire is prohibited from sending private messages to non-Administrators
+	silent bool
+	// All actions performed by empire are logged with a special event code
+	logged bool
+}
+type user_t struct {
+	id         int
+	userName   string
+	password   string
+	flags      user_flag_t
+	nickname   string
+	email      string
+	lang       string
+	dateformat string
+	lastIP     string
+	createDate time.Time
+	lastDate   time.Time
+}
+type user_flag_t struct {
+	// user has Moderator privileges (can set/clear multi and disabled flags, can browse empire messages)
+	mod bool
+	// user has Administrator privileges (can grant/revoke privileges, delete/rename empires, login as anyone, edit clans)
+	admin bool
+	// user account is disabled, cannot create new empires (but can still login to existing ones)
+	disabled bool
+	// user account's email address has been validated at least once
+	valid bool
+	// user account has been voluntarily closed, cannot create new empires or login to existing ones
+	closed bool
+	// user account is suspected of abuse
+	watch bool
+}
+type world_t struct {
+	lotto_current_jackpot   int
+	lotto_yesterday_jackpot int
+	lotto_last_picked       int
+	lotto_last_winner       int
+	lotto_jackpot_increase  int
+	round_time_begin        time.Time
+	round_time_closing      time.Time
+	round_time_end          time.Time
+	turns_next              time.Time
+	turns_next_hourly       time.Time
+	turns_next_daily        time.Time
+}
 
-func newInstance() (*PHP, error) {
+func newInstance(w http.ResponseWriter, r *http.Request) (*PHP, error) {
 	p := &PHP{
-		constants: make(map[string]any),
-		required:  make(map[string]bool),
+		required: make(map[string]bool),
+	}
+	if w != nil && r != nil {
+		p.constants.REQUEST_URI = r.URL
 	}
 	return p, nil
 }
@@ -77,15 +154,6 @@ type arnode struct {
 //	return a
 //}
 
-func (p *PHP) define(key string, value any) {
-	p.constants[key] = value
-}
-
-func (p *PHP) defined(key string) bool {
-	_, ok := p.constants[key]
-	return ok
-}
-
 func (p *PHP) die(format string, args ...any) {
 	log.Printf(format, args...)
 	panic("php: die")
@@ -103,15 +171,7 @@ func (p *PHP) getcwd() string {
 }
 
 func (p *PHP) getString(key string) string {
-	v, ok := p.constants[key]
-	if !ok {
-		panic(fmt.Sprintf("php: getString: %q: undefined\n", key))
-	}
-	val, ok := p.constants[key].(string)
-	if !ok {
-		panic(fmt.Sprintf("php: getString: %q: %T\n", key, v))
-	}
-	return val
+	panic("php: getString: not implemented")
 }
 
 func (p *PHP) require_once(path string) {

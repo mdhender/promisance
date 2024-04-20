@@ -16,14 +16,14 @@ func (p *PHP) index_php() error {
 	// don't allow CLI invocation
 
 	// prevent recursion
-	if p.globals.IN_GAME {
+	if p.constants.IN_GAME {
 		p.die("Access denied (recursion)")
 	}
-	p.globals.IN_GAME = true
-	p.globals.PROM_BASEDIR = "."
+	p.constants.IN_GAME = true
+	p.constants.PROM_BASEDIR = "."
 
 	// Don't allow accessing anything while setup.php is being run
-	if p.file_exists(filepath.Join(p.globals.PROM_BASEDIR, "setup.php")) {
+	if p.file_exists(filepath.Join(p.constants.PROM_BASEDIR, "setup.php")) {
 		p.die("Access denied (setup running)")
 	}
 	log.Printf("todo: the setup check is not implemented correctly\n")

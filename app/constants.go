@@ -1,6 +1,13 @@
 package main
 
+import "time"
+
 const (
+	// php/config.php
+
+	VACATION_START = 12 * time.Hour // Delay before empire is protected
+	VACATION_LIMIT = 72 * time.Hour // Minimum vacation length (not including start delay)
+
 	// php/classes/prom_clan.php
 
 	RELATION_INBOUND  = 2
@@ -176,16 +183,6 @@ const (
 var (
 	//// php/includes/constants.php
 	//CUR_TIME = time.Now()
-
-	// php/index.php
-	// php/install/setup.php
-	// php/util/checklang.php
-	// php/util/createlocks.php
-	// php/util/fixids.php
-	// php/util/fixranks.php
-	// php/util/worldvars.php
-
-	IN_GAME bool
 
 	// php/install/setup.php
 	// php/util/checklang.php

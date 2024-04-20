@@ -26,64 +26,6 @@ const (
 	LOCK_NEW     = 2147483646 // New entity creation
 	LOCK_TURNS   = 2147483647 // Turns script
 
-	// User flags
-	UFLAG_MOD     = 0x01 // User has Moderator privileges (can set/clear multi and disabled flags, can browse empire messages)
-	UFLAG_ADMIN   = 0x02 // User has Administrator privileges (can grant/revoke privileges, delete/rename empires, login as anyone, edit clans)
-	UFLAG_DISABLE = 0x04 // User account is disabled, cannot create new empires (but can still login to existing ones)
-	UFLAG_VALID   = 0x08 // User account's email address has been validated at least once
-	UFLAG_CLOSED  = 0x10 // User account has been voluntarily closed, cannot create new empires or login to existing ones
-	UFLAG_WATCH   = 0x20 // User account is suspected of abuse
-
-	// Empire flags
-	//EFLAG_MOD = 0  // Unused
-	EFLAG_ADMIN   = 0x0002 // Empire is owned by moderator/administrator and cannot interact with other empires
-	EFLAG_DISABLE = 0x0004 // Empire is disabled
-	EFLAG_VALID   = 0x0008 // Empire has submitted their validation code
-	EFLAG_DELETE  = 0x0010 // Empire is flagged for deletion
-	EFLAG_MULTI   = 0x0020 // Empire is one of multiple accounts being accessed from the same location (legally or not)
-	EFLAG_NOTIFY  = 0x0040 // Empire is in a notification state and cannot perform actions (and will not update idle time)
-	EFLAG_ONLINE  = 0x0080 // Empire is currently logged in
-	EFLAG_SILENT  = 0x0100 // Empire is prohibited from sending private messages to non-Administrators
-	EFLAG_LOGGED  = 0x0200 // All actions performed by empire are logged with a special event code
-
-	// Empire message flags
-	MFLAG_DELETE = 0x01 // Message has been deleted
-	MFLAG_READ   = 0x02 // Message has been read
-	MFLAG_REPLY  = 0x04 // Message has been replied to
-	MFLAG_REPORT = 0x08 // Message has been reported for abuse
-	MFLAG_DEAD   = 0x10 // Message sender is dead
-
-	// Empire news flags
-	NFLAG_READ   = 0x01 // News item has been read
-	NFLAG_LOCK   = 0x02 // News item is currently being processed
-	NFLAG_GOTTEN = 0x04 // Items attached to the news message have been received
-
-	// Clan relation flags
-	CRFLAG_MUTUAL = 0x01 // Clan relation is mutual - set to complete an alliance, clear to stop a war
-	CRFLAG_ALLY   = 0x02 // Clan relation describes an alliance
-	CRFLAG_WAR    = 0x04 // Clan relation describes a war
-
-	// Clan forum thread flags
-	CTFLAG_NEWS   = 0x01 // Topic contains News postings for the clan, visible on main page
-	CTFLAG_STICKY = 0x02 // Topic is sticky and appears in bold at the top of the list
-	CTFLAG_LOCK   = 0x04 // Topic has been locked - normal members may not post
-	CTFLAG_DELETE = 0x08 // Topic has been deleted
-
-	// Clan forum message flags
-	CMFLAG_EDIT   = 0x01 // Post has been edited
-	CMFLAG_DELETE = 0x02 // Post has been deleted
-
-	// Clan invite flags
-	CIFLAG_PERM = 0x01 // Clan invitation is permanent, effectively a whitelist entry
-
-	// History round flags
-	HRFLAG_CLANS = 0x01 // Round had clans enabled
-	HRFLAG_SCORE = 0x02 // Round ranked empires by score rather than networth
-
-	// History empire flags
-	HEFLAG_PROTECT = 0x01        // Empire was protected, whether vacation or newly registered
-	HEFLAG_ADMIN   = EFLAG_ADMIN // Empire was owned by a moderator/administrator
-
 	// Turn log entry types
 	TURN_EVENT = 0 // Normal turn log entry
 	TURN_START = 1 // Start of a turn run
@@ -124,7 +66,7 @@ const (
 )
 
 func (p *PHP) includes_constants_php() error {
-	if !p.globals.IN_GAME {
+	if !p.constants.IN_GAME {
 		p.die("Access denied")
 	}
 
@@ -182,7 +124,7 @@ func (p *PHP) includes_constants_php() error {
 	}
 
 	// For the scope of one script execution, this is constant
-	p.globals.CUR_TIME = time.Now().UTC()
+	p.constants.CUR_TIME = time.Now().UTC()
 
 	// Configurable time zones
 	p.globals.timezones = map[int]string{

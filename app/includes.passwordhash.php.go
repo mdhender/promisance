@@ -7,7 +7,7 @@ import (
 )
 
 func (p *PHP) includes_PasswordHash_php() error {
-	if !p.globals.IN_GAME {
+	if !p.constants.IN_GAME {
 		p.die("Access denied")
 	}
 

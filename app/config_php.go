@@ -48,9 +48,6 @@ const (
 	TURNS_VALIDATE   = 150 // How long before validation is necessary
 	TURNS_ERA        = 500 // Minimum number of turns that must be spent in an era before one can advance or regress
 
-	VACATION_START = 12 // Delay before empire is protected
-	VACATION_LIMIT = 72 // Minimum vacation length (not including start delay)
-
 	TURNS_FREQ          = 10      // how often to give turns
 	TURNS_OFFSET        = 0       // offset (in minutes) for giving turns, relative to round start
 	TURNS_OFFSET_HOURLY = 0       // offset (in minutes) for performing hourly events, relative to round start
@@ -158,7 +155,7 @@ const (
 )
 
 func (p *PHP) config_php() error {
-	if !p.globals.IN_GAME {
+	if !p.constants.IN_GAME {
 		p.die("Access denied")
 	}
 
