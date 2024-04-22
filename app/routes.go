@@ -6,21 +6,23 @@ import (
 	"bytes"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/mdhender/promisance/app/jot"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"time"
 )
 
 func (s *server) routes(valid_locations map[string]int) http.Handler {
 	if s.sessions == nil {
-		panic("assert(sessionManager != nil)")
+		panic("assert(sessions != nil)")
 	}
 
 	r := chi.NewRouter()
-	r.Use(middleware.Logger, s.Sessions(s.sessions)) // , s.checkBannedIP(), s.validate_location(valid_locations), s.turnsCrontab(), s.setRoundTimes())
+	r.Use(middleware.Logger, s.sessions.Authenticator()) // , s.checkBannedIP(), s.validate_location(valid_locations), s.turnsCrontab(), s.setRoundTimes())
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/site-map", http.StatusTemporaryRedirect)
 	})
@@ -231,19 +233,24 @@ func (s *server) landHandler(w http.ResponseWriter, r *http.Request) {
 }
 func (s *server) loginGetHandler(w http.ResponseWriter, r *http.Request) {
 	// redirect to the main page if the user is authenticated
-	user := s.sessions.User(r.Context())
+	user := s.sessions.User(r)
 	log.Printf("%s %s: lgh: user %+v\n", r.Method, r.URL, user)
-	if user.isAuthenticated() {
+	if user.IsAuthenticated() {
+		log.Printf("%s %s: lgh: user is authenticated\n", r.Method, r.URL)
 		http.Redirect(w, r, "/main", http.StatusSeeOther)
 		return
 	}
+	log.Printf("%s %s: lgh: user is not authenticated\n", r.Method, r.URL)
+	// explicitly clear the token cookie
+	s.sessions.DeleteCookie(w)
+
+	// render the login page template
 	t, err := template.ParseFiles(filepath.Join(s.templates, "login.gohtml"))
 	if err != nil {
 		log.Printf("%s %s: parse template: %v", r.Method, r.URL, err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	// render the template
 	buf := &bytes.Buffer{}
 	if err := t.Execute(buf, nil); err != nil {
 		log.Printf("%s %s: render template: %v", r.Method, r.URL, err)
@@ -255,9 +262,6 @@ func (s *server) loginGetHandler(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(buf.Bytes())
 }
 func (s *server) loginPostHandler(w http.ResponseWriter, r *http.Request) {
-	su := s.sessions.User(r.Context())
-	log.Printf("%s %s: lph: user %+v\n", r.Method, r.URL, su)
-
 	// Get the form values
 	username := r.FormValue("login_username")
 	log.Printf("%s %s: login_username: %q\n", r.Method, r.URL, username)
@@ -268,18 +272,23 @@ func (s *server) loginPostHandler(w http.ResponseWriter, r *http.Request) {
 	// ...
 
 	// Authenticate the user
-	user, err := s.authenticator.Authenticate(username, password)
-	if err != nil {
+	if !s.authenticator.Authenticate(username, password) {
 		log.Printf("%s %s: lph: authentication failed\n", r.Method, r.URL)
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 	log.Printf("%s %s: lph: authentication succeded\n", r.Method, r.URL)
+	user := jot.User_t{UserId: 1, EmpireId: 1, Roles: map[string]bool{"authenticated": true}}
 	log.Printf("%s %s: user %v\n", r.Method, r.URL, user)
 
-	// create a new session and save it as a cookie
-	session := s.sessions.NewSession(1, 1)
-	session.CreateCookie(w)
+	// create a new token and save it as a cookie
+	cookie, err := s.sessions.NewTokenCookie(7*24*time.Hour, user)
+	if err != nil {
+		log.Printf("%s %s: lph: sessions token failed: %v\n", r.Method, r.URL, err)
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	http.SetCookie(w, cookie)
 
 	//	// Retrieve the associated empires
 	//	empires, err := h.getEmpires(user.ID)
@@ -334,6 +343,7 @@ func (s *server) loginPostHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/game", http.StatusSeeOther)
 }
 func (s *server) logoutHandler(w http.ResponseWriter, r *http.Request) {
+	s.sessions.DeleteCookie(w)
 	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
 }
 func (s *server) lotteryHandler(w http.ResponseWriter, r *http.Request) {

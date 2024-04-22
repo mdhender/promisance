@@ -3,6 +3,7 @@
 package main
 
 import (
+	"github.com/mdhender/promisance/app/jot"
 	"github.com/mdhender/promisance/app/model"
 	"github.com/mdhender/promisance/app/orm"
 )
@@ -16,13 +17,15 @@ type server struct {
 	tz            string
 	db            *orm.DB
 	world         *model.World_t
-	authenticator *AuthenticationManager
-	sessions      *SessionManager_t
+	sessions      *jot.Factory_t
+	authenticator *Authenticator_t
 }
 
-type AuthenticationManager struct{}
-type User struct{}
+type Authenticator_t struct {
+	user string
+	pass string
+}
 
-func (a *AuthenticationManager) Authenticate(username, password string) (User, error) {
-	return User{}, nil
+func (a *Authenticator_t) Authenticate(username, password string) bool {
+	return username == a.user && password == a.pass
 }

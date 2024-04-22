@@ -6,6 +6,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/mdhender/promisance/app/jot"
 	"github.com/mdhender/promisance/app/model"
 	"github.com/mdhender/promisance/app/orm"
 	"github.com/spf13/cobra"
@@ -109,12 +110,15 @@ var serverCmd = &cobra.Command{
 		s := &server{
 			host: "localhost", port: "8080",
 			data: serverArgs.data, templates: serverArgs.templates,
-			sessions: &SessionManager_t{
-				sessions: map[string]*Session_t{},
-			},
 		}
 		s.addr = net.JoinHostPort(s.host, s.port)
 		s.tz, _ = time.Now().Zone()
+		s.authenticator = &Authenticator_t{"basque", "bisque"}
+		fibSigner, err := jot.NewHS256Signer("fib", []byte("signing-key"), 21*24*time.Hour)
+		if err != nil {
+			log.Fatalf("error: jot.NewHS256Signer: %v\n", err)
+		}
+		s.sessions, err = jot.NewFactory("", "", 7*24*time.Hour, fibSigner)
 
 		log.Printf("app: server time zone is %s (logs are UTC)\n", s.tz)
 
@@ -204,7 +208,6 @@ var serverCmd = &cobra.Command{
 
 		dbFile := filepath.Join(serverArgs.data, "promisance.sqlite")
 		log.Printf("server: connecting to database: %s\n", dbFile)
-		var err error
 		s.db, err = orm.OpenSqliteDatabase(dbFile)
 		if err != nil {
 			log.Fatalf("server: database: %v\n", err)
