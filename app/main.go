@@ -35,10 +35,13 @@ type config struct{}
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute(cfg *config) error {
 	rootCmd.AddCommand(serverCmd)
-	serverCmd.Flags().StringVar(&serverArgs.data, "data", ".", "path to data files")
+	serverCmd.Flags().StringVar(&serverArgs.data, "data", "", "path to data files")
 	serverCmd.Flags().StringVar(&serverArgs.host, "host", "localhost", "host to bind listener to")
 	serverCmd.Flags().StringVar(&serverArgs.port, "port", "8080", "port to bind listener to")
+	serverCmd.Flags().StringVar(&serverArgs.templates, "templates", "", "path to template files")
 	if err := serverCmd.MarkFlagRequired("data"); err != nil {
+		log.Fatalf("setup: markFlagRequired: %v\n", err)
+	} else if err = serverCmd.MarkFlagRequired("templates"); err != nil {
 		log.Fatalf("setup: markFlagRequired: %v\n", err)
 	}
 
@@ -65,9 +68,10 @@ var rootCmd = &cobra.Command{
 }
 
 var serverArgs struct {
-	data string
-	host string
-	port string
+	data      string
+	host      string
+	port      string
+	templates string // path to template files
 }
 
 var serverCmd = &cobra.Command{
@@ -76,7 +80,7 @@ var serverCmd = &cobra.Command{
 	Long:  `Start the web server.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// verify data path
-		if serverArgs.data = strings.TrimSpace(serverArgs.data); setupArgs.data == "" {
+		if serverArgs.data = strings.TrimSpace(serverArgs.data); serverArgs.data == "" {
 			log.Fatal("error: no data path specified\n")
 		} else if path, err := filepath.Abs(serverArgs.data); err != nil {
 			log.Fatalf("error: data: %v\n", err)
@@ -87,9 +91,28 @@ var serverCmd = &cobra.Command{
 		} else {
 			serverArgs.data = path
 		}
-		log.Printf("server: data %s\n", setupArgs.data)
+		log.Printf("server: data %s\n", serverArgs.data)
+		// verify templates path
+		if serverArgs.templates = strings.TrimSpace(serverArgs.templates); serverArgs.templates == "" {
+			log.Fatal("error: no templates path specified\n")
+		} else if path, err := filepath.Abs(serverArgs.templates); err != nil {
+			log.Fatalf("error: templates: %v\n", err)
+		} else if sb, err := os.Stat(path); err != nil {
+			log.Fatalf("error: templates: %s: no such directory\n", serverArgs.templates)
+		} else if !sb.IsDir() {
+			log.Fatalf("error: templates: %s: not a directory\n", serverArgs.templates)
+		} else {
+			serverArgs.templates = path
+		}
+		log.Printf("server: templates %s\n", serverArgs.templates)
 
-		s := &server{host: "localhost", port: "8080"}
+		s := &server{
+			host: "localhost", port: "8080",
+			data: serverArgs.data, templates: serverArgs.templates,
+			sessions: &SessionManager_t{
+				sessions: map[string]*Session_t{},
+			},
+		}
 		s.addr = net.JoinHostPort(s.host, s.port)
 		s.tz, _ = time.Now().Zone()
 
@@ -177,7 +200,7 @@ var serverCmd = &cobra.Command{
 		}
 		log.Printf("server: todo: implement valid_locations referer logic (%d pages)\n", len(valid_locations))
 
-		handler := s.routes()
+		handler := s.routes(valid_locations)
 
 		dbFile := filepath.Join(serverArgs.data, "promisance.sqlite")
 		log.Printf("server: connecting to database: %s\n", dbFile)

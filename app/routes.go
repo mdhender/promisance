@@ -3,77 +3,86 @@
 package main
 
 import (
-	"github.com/mdhender/promisance/app/way"
+	"bytes"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"runtime/debug"
 )
 
-func (s *server) routes() http.Handler {
-	router := way.NewRouter()
-	router.HandleFunc("GET", "/", func(w http.ResponseWriter, r *http.Request) {
+func (s *server) routes(valid_locations map[string]int) http.Handler {
+	if s.sessions == nil {
+		panic("assert(sessionManager != nil)")
+	}
+
+	r := chi.NewRouter()
+	r.Use(middleware.Logger, s.Sessions(s.sessions)) // , s.checkBannedIP(), s.validate_location(valid_locations), s.turnsCrontab(), s.setRoundTimes())
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/site-map", http.StatusTemporaryRedirect)
 	})
-	router.HandleFunc("GET", "/admin/clans", s.adminClansHandler)
-	router.HandleFunc("GET", "/admin/empedit", s.adminEmpeditHandler)
-	router.HandleFunc("GET", "/admin/empires", s.adminEmpiresHandler)
-	router.HandleFunc("GET", "/admin/history", s.adminHistoryHandler)
-	router.HandleFunc("GET", "/admin/log", s.adminLogHandler)
-	router.HandleFunc("GET", "/admin/market", s.adminMarketHandler)
-	router.HandleFunc("GET", "/admin/messages", s.adminMessagesHandler)
-	router.HandleFunc("GET", "/admin/permissions", s.adminPermissionsHandler)
-	router.HandleFunc("GET", "/admin/round", s.adminRoundHandler)
-	router.HandleFunc("GET", "/admin/users", s.adminUsersHandler)
-	router.HandleFunc("GET", "/aid", s.aidHandler)
-	router.HandleFunc("GET", "/bank", s.bankHandler)
-	router.HandleFunc("GET", "/banner", s.bannerHandler)
-	router.HandleFunc("GET", "/build", s.buildHandler)
-	router.HandleFunc("GET", "/cash", s.cashHandler)
-	router.HandleFunc("GET", "/clan", s.clanHandler)
-	router.HandleFunc("GET", "/clanforum", s.clanforumHandler)
-	router.HandleFunc("GET", "/clanstats", s.clanstatsHandler)
-	router.HandleFunc("GET", "/contacts", s.contactsHandler)
-	router.HandleFunc("GET", "/count", s.countHandler)
-	router.HandleFunc("GET", "/credits", s.creditsHandler)
-	router.HandleFunc("GET", "/delete", s.deleteHandler)
-	router.HandleFunc("GET", "/demolish", s.demolishHandler)
-	router.HandleFunc("GET", "/farm", s.farmHandler)
-	router.HandleFunc("GET", "/game", s.gameHandler)
-	router.HandleFunc("GET", "/graveyard", s.graveyardHandler)
-	router.HandleFunc("GET", "/guide", s.guideHandler)
-	router.HandleFunc("GET", "/history", s.historyHandler)
-	router.HandleFunc("GET", "/land", s.landHandler)
-	router.HandleFunc("GET", "/login", s.loginHandler)
-	router.HandleFunc("GET", "/logout", s.logoutHandler)
-	router.HandleFunc("GET", "/lottery", s.lotteryHandler)
-	router.HandleFunc("GET", "/magic", s.magicHandler)
-	router.HandleFunc("GET", "/main", s.mainHandler)
-	router.HandleFunc("GET", "/manage/clan", s.manageClansHandler)
-	router.HandleFunc("GET", "/manage/empire", s.manageEmpireHandler)
-	router.HandleFunc("GET", "/manage/user", s.manageUserHandler)
-	router.HandleFunc("GET", "/messages", s.messagesHandler)
-	router.HandleFunc("GET", "/military", s.militaryHandler)
-	router.HandleFunc("GET", "/news", s.newsHandler)
-	router.HandleFunc("GET", "/pguide", s.pguideHandler)
-	router.HandleFunc("GET", "/playerstats", s.playerstatsHandler)
-	router.HandleFunc("GET", "/pubmarketbuy", s.pubmarketbuyHandler)
-	router.HandleFunc("GET", "/pubmarketsell", s.pubmarketsellHandler)
-	router.HandleFunc("GET", "/pvtmarketbuy", s.pvtmarketbuyHandler)
-	router.HandleFunc("GET", "/pvtmarketsell", s.pvtmarketsellHandler)
-	router.HandleFunc("GET", "/relogin", s.reloginHandler)
-	router.HandleFunc("GET", "/revalidate", s.revalidateHandler)
-	router.HandleFunc("GET", "/scores", s.scoresHandler)
-	router.HandleFunc("GET", "/search", s.searchHandler)
-	router.HandleFunc("GET", "/signup", s.signupHandler)
-	router.HandleFunc("GET", "/site-map", s.sitemapHandler)
-	router.HandleFunc("GET", "/status", s.statusHandler)
-	router.HandleFunc("GET", "/topclans", s.topclansHandler)
-	router.HandleFunc("GET", "/topempires", s.topempiresHandler)
-	router.HandleFunc("GET", "/topplayers", s.topplayersHandler)
-	router.HandleFunc("GET", "/validate", s.validateHandler)
-
-	return router
+	r.Get("/admin/clans", s.adminClansHandler)
+	r.Get("/admin/empedit", s.adminEmpeditHandler)
+	r.Get("/admin/empires", s.adminEmpiresHandler)
+	r.Get("/admin/history", s.adminHistoryHandler)
+	r.Get("/admin/log", s.adminLogHandler)
+	r.Get("/admin/market", s.adminMarketHandler)
+	r.Get("/admin/messages", s.adminMessagesHandler)
+	r.Get("/admin/permissions", s.adminPermissionsHandler)
+	r.Get("/admin/round", s.adminRoundHandler)
+	r.Get("/admin/users", s.adminUsersHandler)
+	r.Get("/aid", s.aidHandler)
+	r.Get("/bank", s.bankHandler)
+	r.Get("/banner", s.bannerHandler)
+	r.Get("/build", s.buildHandler)
+	r.Get("/cash", s.cashHandler)
+	r.Get("/clan", s.clanHandler)
+	r.Get("/clanforum", s.clanforumHandler)
+	r.Get("/clanstats", s.clanstatsHandler)
+	r.Get("/contacts", s.contactsHandler)
+	r.Get("/count", s.countHandler)
+	r.Get("/credits", s.creditsHandler)
+	r.Get("/delete", s.deleteHandler)
+	r.Get("/demolish", s.demolishHandler)
+	r.Get("/farm", s.farmHandler)
+	r.Get("/game", s.gameHandler)
+	r.Get("/graveyard", s.graveyardHandler)
+	r.Get("/guide", s.guideHandler)
+	r.Get("/history", s.historyHandler)
+	r.Get("/land", s.landHandler)
+	r.Get("/login", s.loginGetHandler)
+	r.Post("/login", s.loginPostHandler)
+	r.Get("/logout", s.logoutHandler)
+	r.Get("/lottery", s.lotteryHandler)
+	r.Get("/magic", s.magicHandler)
+	r.Get("/main", s.mainHandler)
+	r.Get("/manage/clan", s.manageClansHandler)
+	r.Get("/manage/empire", s.manageEmpireHandler)
+	r.Get("/manage/user", s.manageUserHandler)
+	r.Get("/messages", s.messagesHandler)
+	r.Get("/military", s.militaryHandler)
+	r.Get("/news", s.newsHandler)
+	r.Get("/pguide", s.pguideHandler)
+	r.Get("/playerstats", s.playerstatsHandler)
+	r.Get("/pubmarketbuy", s.pubmarketbuyHandler)
+	r.Get("/pubmarketsell", s.pubmarketsellHandler)
+	r.Get("/pvtmarketbuy", s.pvtmarketbuyHandler)
+	r.Get("/pvtmarketsell", s.pvtmarketsellHandler)
+	r.Get("/relogin", s.reloginHandler)
+	r.Get("/revalidate", s.revalidateHandler)
+	r.Get("/scores", s.scoresHandler)
+	r.Get("/search", s.searchHandler)
+	r.Get("/signup", s.signupHandler)
+	r.Get("/site-map", s.sitemapHandler)
+	r.Get("/status", s.statusHandler)
+	r.Get("/topclans", s.topclansHandler)
+	r.Get("/topempires", s.topempiresHandler)
+	r.Get("/topplayers", s.topplayersHandler)
+	r.Get("/validate", s.validateHandler)
+	return r
 }
 
 func (s *server) handleNotAuthorized() http.HandlerFunc {
@@ -220,8 +229,109 @@ func (s *server) historyHandler(w http.ResponseWriter, r *http.Request) {
 func (s *server) landHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
 }
-func (s *server) loginHandler(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
+func (s *server) loginGetHandler(w http.ResponseWriter, r *http.Request) {
+	// redirect to the main page if the user is authenticated
+	user := s.sessions.User(r.Context())
+	log.Printf("%s %s: lgh: user %+v\n", r.Method, r.URL, user)
+	if user.isAuthenticated() {
+		http.Redirect(w, r, "/main", http.StatusSeeOther)
+		return
+	}
+	t, err := template.ParseFiles(filepath.Join(s.templates, "login.gohtml"))
+	if err != nil {
+		log.Printf("%s %s: parse template: %v", r.Method, r.URL, err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	// render the template
+	buf := &bytes.Buffer{}
+	if err := t.Execute(buf, nil); err != nil {
+		log.Printf("%s %s: render template: %v", r.Method, r.URL, err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(buf.Bytes())
+}
+func (s *server) loginPostHandler(w http.ResponseWriter, r *http.Request) {
+	su := s.sessions.User(r.Context())
+	log.Printf("%s %s: lph: user %+v\n", r.Method, r.URL, su)
+
+	// Get the form values
+	username := r.FormValue("login_username")
+	log.Printf("%s %s: login_username: %q\n", r.Method, r.URL, username)
+	password := r.FormValue("login_password")
+	log.Printf("%s %s: login_password: %q", r.Method, r.URL, password)
+
+	// Validate the form inputs
+	// ...
+
+	// Authenticate the user
+	user, err := s.authenticator.Authenticate(username, password)
+	if err != nil {
+		log.Printf("%s %s: lph: authentication failed\n", r.Method, r.URL)
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	log.Printf("%s %s: lph: authentication succeded\n", r.Method, r.URL)
+	log.Printf("%s %s: user %v\n", r.Method, r.URL, user)
+
+	// create a new session and save it as a cookie
+	session := s.sessions.NewSession(1, 1)
+	session.CreateCookie(w)
+
+	//	// Retrieve the associated empires
+	//	empires, err := h.getEmpires(user.ID)
+	//	if err != nil {
+	//		// Handle error retrieving empires
+	//		// ...
+	//		return
+	//	}
+	//
+	//	// Check if the user has any empires
+	//	if len(empires) == 0 {
+	//		// Handle the case where the user has no empires
+	//		// ...
+	//		return
+	//	}
+	//
+	//	// Load the first empire
+	//	empire := empires[0]
+	//
+	//	// Initialize the session
+	//	err = h.session.Start(w, r)
+	//	if err != nil {
+	//		// Handle session initialization error
+	//		// ...
+	//		return
+	//	}
+	//
+	//	// Set the user and empire in the session
+	//	h.session.Set("user", user)
+	//	h.session.Set("empire", empire)
+	//
+	//	// Update the user's last IP and last date
+	//	user.LastIP = r.RemoteAddr
+	//	user.LastDate = time.Now()
+	//
+	//	// Save the user and empire
+	//	err = h.db.SaveUser(user)
+	//	if err != nil {
+	//		// Handle error saving user
+	//		// ...
+	//		return
+	//	}
+	//
+	//	err = h.db.SaveEmpire(empire)
+	//	if err != nil {
+	//		// Handle error saving empire
+	//		// ...
+	//		return
+	//	}
+
+	// Redirect to the game location
+	http.Redirect(w, r, "/game", http.StatusSeeOther)
 }
 func (s *server) logoutHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
