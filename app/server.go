@@ -20,6 +20,7 @@ type server struct {
 	world         *model.World_t
 	sessions      *jot.Factory_t
 	authenticator *Authenticator_t
+	language      *LanguageManager_t
 }
 
 type Authenticator_t struct {

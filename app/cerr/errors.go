@@ -13,4 +13,5 @@ const (
 	ErrDatabaseExists      = Error("database exists")
 	ErrForeignKeysDisabled = Error("foreign keys disabled")
 	ErrPragmaReturnedNil   = Error("pragma returned nil")
+	ErrUnknownLanguage     = Error("unknown language")
 )

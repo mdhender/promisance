@@ -1,12 +1,9 @@
 {{define "content"}}{{- /*gotype:github.com/mdhender/promisance/app.LoginTemplateData*/ -}}
 <h2>{{.GAME_TITLE}}</h2>
-{{.GAME_VERSION}}<br />
-LOGIN_DATE_RANGE
-{{.World.RoundTimeBegin}}
-{{.World.RoundTimeEnd}}
-<br />
-<b>{{.CountData}}</b>
-<br />
+{{.LOGIN_VERSION}}<br />
+    <hr/>
+{{.LOGIN_DATE_RANGE}}<br />
+{{.LOGIN_COUNTER}}<br />
 {{range .Notices}}{{.}}{{end}}
 
 <form method="post" action="/login" class="box rows">
@@ -22,17 +19,11 @@ LOGIN_DATE_RANGE
     <input type="submit" value="{{.LOGIN_SUBMIT}}"/>
 </form>
 
-{{if .SignupOpen}}
-<a href="?location=signup"><b>{{.LOGIN_SIGNUP}}</b></a><br />
-{{else}}
-<b>{{.LOGIN_SIGNUP_CLOSED}}</b><br />
-{{end}}
-<a href="?location=topempires"><b>{{.LOGIN_TOPEMPIRES}}'</b></a><br />
-{{if .CLAN_ENABLE}}
-<a href="?location=topclans"><b>{{.LOGIN_TOPCLANS}}</b></a><br />
-{{end}}
+{{.SignupStatus}}
+{{.LOGIN_TOPEMPIRES}}
+{{if .CLAN_ENABLE}}{{.LOGIN_TOPCLANS}}{{end}}
 <br />
-<a href="?location=topplayers"><b>{{.LOGIN_TOPPLAYERS}}</b></a><br />
-<a href="?location=history"><b>{{.LOGIN_HISTORY}}</b></a><br />
-<a href="?location=pguide"><b>{{.LOGIN_GUIDE}}</b></a><br />
+{{.LOGIN_TOPPLAYERS}}
+{{.LOGIN_HISTORY}}
+{{.LOGIN_GUIDE}}
 {{end}}

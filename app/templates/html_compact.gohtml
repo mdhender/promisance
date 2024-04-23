@@ -3,31 +3,26 @@
     No menubar/banner in the header; include a "Return to Login" link in the footer.
  -->
 {{define "layout"}}{{- /*gotype:github.com/mdhender/promisance/app.CompactLayoutTemplateData*/ -}}<!DOCTYPE html>
-<html lang="{{.Begin.LANG_CODE}}" dir="{{.Begin.LANG_DIR}}">
+<html lang="{{.LANG_CODE}}" {{with .LANG_DIR}}dir="{{.}}"{{end}}>
 <head>
     <meta charset="UTF-8">
     <title>{{.Title}}</title>
-    <link rel="stylesheet" type="text/css" href="css/{{.Begin.GetStyles}}"/>
-    {{range .Begin.AddStyles}}{{.}}{{end}}
-    {{range .Begin.AddScripts}}{{.}}{{end}}
+    <link rel="stylesheet" type="text/css" href="/css/{{.GetStyles}}"/>
+    {{range .AddStyles}}{{.}}{{end}}
+    {{range .AddScripts}}{{.}}{{end}}
 </head>
 <body>
+<hr/>
 <div class="ac">
 {{template "content" .Content }}
 <br/>
-{{.End.GAME_VERSION}}
-{{if not (eq .Page "credits")}}<br/><a href="?location=credits">{{.End.HTML_LINK_CREDITS}}</a>{{end}}
-{{if not (eq .Page "login")}}<br/><a href="?location=login">{{.End.HTML_LINK_LOGIN}}</a>{{end}}
-{{if .End.DEBUG_FOOTER}}
-    <br/>
-    <br/>
-    {{.End.HTML_DEBUG_FOOTER}}
-    {{.End.RoundDur}}
-    {{.End.MemoryGetUsage}}
-    {{.End.MemoryGetPeakUsage}}
-    {{if .End.DB}}{{.End.DB.GetQueryCount}}{{else}}0{{end}}
-{{end}}
+<hr/>
+{{.HTML_FOOTER}}
+{{if not (eq .Page "credits")}}<br/><a href="/index.php?location=credits">{{.HTML_LINK_CREDITS}}</a>{{end}}
+{{if not (eq .Page "login")}}<br/><a href="/index.php?location=login">{{.HTML_LINK_LOGIN}}</a>{{end}}
+{{if .DEBUG_FOOTER}}<br/><br/>{{.HTML_DEBUG_FOOTER}}{{end}}
 </div>
+<hr/>
 </body>
 </html>
 {{end}}

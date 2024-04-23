@@ -125,7 +125,13 @@ var serverCmd = &cobra.Command{
 			log.Fatalf("error: jot.NewHS256Signer: %v\n", err)
 		}
 		s.sessions, err = jot.NewFactory("", "", 7*24*time.Hour, fibSigner)
-
+		if err != nil {
+			log.Fatalf("error: jot.NewFactory: %v\n", err)
+		}
+		s.language, err = NewLanguageManager("en-US")
+		if err != nil {
+			log.Fatalf("error: NewLanguageManager: %v\n", err)
+		}
 		log.Printf("app: server time zone is %s (logs are UTC)\n", s.tz)
 
 		// temporarily save some routing information. we don't use it, but may.

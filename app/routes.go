@@ -258,60 +258,37 @@ func (s *server) landHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 type CompactLayoutTemplateData struct {
-	Page  string // internal name of the page?
-	Title string
-	Begin struct {
-		StartTime  template.HTML
-		LANG_CODE  string
-		LANG_DIR   string
-		GetStyles  string   // $this->getstyle()
-		AddStyles  []string // $this->addStyles()
-		AddScripts []string // $this->addScripts()
-	}
-	Content any
-	End     struct {
-		Dur                string // now - $this.starttime
-		GAME_VERSION       template.HTML
-		HTML_LINK_CREDITS  string
-		HTML_LINK_LOGIN    string
-		DEBUG_FOOTER       bool
-		RoundDur           template.HTML
-		MemoryGetUsage     string
-		MemoryGetPeakUsage string
-		DB                 bool
-		GetQueryCount      int
-	}
+	Page              string // internal name of the page?
+	Title             string
+	StartTime         template.HTML
+	LANG_CODE         string
+	LANG_DIR          string
+	GetStyles         string   // $this->getstyle()
+	AddStyles         []string // $this->addStyles()
+	AddScripts        []string // $this->addScripts()
+	Content           any
+	HTML_FOOTER       template.HTML
+	HTML_LINK_CREDITS string
+	HTML_LINK_LOGIN   string
+	DEBUG_FOOTER      bool
+	HTML_DEBUG_FOOTER template.HTML
 }
 type LoginTemplateData struct {
-	Num          string // $db->queryCell('SELECT COUNT(*) FROM '. EMPIRE_TABLE .' WHERE u_id != 0')
-	GAME_TITLE   template.HTML
-	GAME_VERSION template.HTML
-	World        struct {
-		RoundTimeBegin string
-		RoundTimeEnd   string
-	}
-	/*
-		if (strlen(COUNTER_TEMPLATE) > 0) {
-			$counter = getimagesize(PROM_BASEDIR .'images/'. COUNTER_TEMPLATE);
-			$count_data = '<img src="?location=count" alt="'. $num .'" style="width:'. ($counter[0] / 10 * strlen($num)) .'px;height:'. $counter[1] .'px" />';
-		} else {
-			$count_data = '<b>'. $num .'</b>';
-		}
-	*/
-	CountData           string
-	Notices             []string // populate with 0 or 1, no more
-	LABEL_USERNAME      template.HTML
-	LABEL_PASSWORD      template.HTML
-	LOGIN_SUBMIT        string
-	SignupOpen          bool // if (ROUND_SIGNUP && !(SIGNUP_CLOSED_USER && SIGNUP_CLOSED_EMPIRE))
-	LOGIN_SIGNUP        template.HTML
-	LOGIN_SIGNUP_CLOSED template.HTML
-	LOGIN_TOPEMPIRES    template.HTML
-	CLAN_ENABLE         bool
-	LOGIN_TOPCLANS      template.HTML
-	LOGIN_TOPPLAYERS    template.HTML
-	LOGIN_HISTORY       template.HTML
-	LOGIN_GUIDE         template.HTML
+	GAME_TITLE       template.HTML
+	LOGIN_VERSION    template.HTML
+	LOGIN_DATE_RANGE template.HTML
+	LOGIN_COUNTER    template.HTML
+	Notices          []string // populate with 0 or 1, no more
+	LABEL_USERNAME   template.HTML
+	LABEL_PASSWORD   template.HTML
+	LOGIN_SUBMIT     string
+	SignupStatus     template.HTML
+	LOGIN_TOPEMPIRES template.HTML
+	CLAN_ENABLE      bool
+	LOGIN_TOPCLANS   template.HTML
+	LOGIN_TOPPLAYERS template.HTML
+	LOGIN_HISTORY    template.HTML
+	LOGIN_GUIDE      template.HTML
 }
 
 func (s *server) loginGetHandler(w http.ResponseWriter, r *http.Request) {
@@ -330,36 +307,51 @@ func (s *server) loginGetHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%s %s: lgh: deleted cookies\n", r.Method, r.URL)
 	s.sessions.DeleteCookie(w)
 
+	num := 3 // $db->queryCell('SELECT COUNT(*) FROM '. EMPIRE_TABLE .' WHERE u_id != 0');
+	countData := template.HTML(fmt.Sprintf("<b>%03d</b>", num))
+	if COUNTER_TEMPLATE != "" {
+		//counter, err := getimagesize(filepath.Join(PROM_BASEDIR, "images", COUNTER_TEMPLATE))
+		//if err != nil {
+		//	log.Printf("%s %s: lgh: error getting image size: %v\n", r.Method, r.URL, err)
+		//} else {
+		//	countData = fmt.Sprintf(`<img src="?location=count" alt="%s" style="width:%dpx;height:%dpx" />`, countData, counter[0]/10*len(countData), counter[1])
+		//}
+	}
+
 	// our response variables
 	var layout CompactLayoutTemplateData
 	layout.Page = "login"
-	layout.Title = "login"
-	layout.Begin.StartTime = template.HTML(started.Format(time.RFC850))
-	layout.Begin.LANG_CODE = "en"
-	layout.Begin.LANG_DIR = "ltr"
-	layout.Begin.GetStyles = "qmt.css"
-	layout.End.GAME_VERSION = template.HTML(GAME_VERSION)
-	layout.End.RoundDur = template.HTML(fmt.Sprintf("%v", time.Now().Sub(started)))
+	layout.Title = s.language.Printf("HTML_TITLE", "login")
+	layout.StartTime = template.HTML(started.Format(time.RFC850))
+	layout.LANG_CODE = s.language.Printf("LANG_CODE")
+	layout.LANG_DIR = s.language.Printf("LANG_DIR")
+	layout.GetStyles = "qmt.css"
+	layout.HTML_FOOTER = s.language.PrintfHTML("HTML_FOOTER", GAME_VERSION)
+	layout.HTML_LINK_CREDITS = s.language.Printf("HTML_LINK_CREDITS")
+	layout.HTML_LINK_LOGIN = s.language.Printf("HTML_LINK_LOGIN")
+	layout.DEBUG_FOOTER = true
+	dur, memUsage, peakMemUsage, queryCount := time.Now().Sub(started), 1, 2, 3
+	layout.HTML_DEBUG_FOOTER = s.language.PrintfHTML("HTML_DEBUG_FOOTER", dur, memUsage, peakMemUsage, queryCount)
 	var content LoginTemplateData
-	content.Num = "123"
-	content.GAME_TITLE = template.HTML("Promisance")
-	content.GAME_VERSION = template.HTML(GAME_VERSION)
-	content.World.RoundTimeBegin = "2022-01-01 00:00:00"
-	content.World.RoundTimeEnd = "2022-01-01 23:59:59"
-	content.CountData = "<b>123</b>"
+	content.GAME_TITLE = template.HTML(GAME_TITLE)
+	content.LOGIN_VERSION = s.language.PrintfHTML("LOGIN_VERSION", GAME_VERSION)
+	content.LOGIN_DATE_RANGE = s.language.PrintfHTML("LOGIN_DATE_RANGE", s.world.RoundTimeBegin, s.world.RoundTimeEnd)
+	content.LOGIN_COUNTER = countData
 	content.Notices = []string{"notice1"}
-	content.LABEL_USERNAME = template.HTML("Username")
-	content.LABEL_PASSWORD = template.HTML("Password")
-	content.LOGIN_SUBMIT = "Submit"
-	content.SignupOpen = true
-	content.LOGIN_SIGNUP = template.HTML("Signup")
-	content.LOGIN_SIGNUP_CLOSED = template.HTML("Signup Closed")
-	content.LOGIN_TOPEMPIRES = template.HTML("Top Empires")
-	content.CLAN_ENABLE = true
-	content.LOGIN_TOPCLANS = template.HTML("Top Clans")
-	content.LOGIN_TOPPLAYERS = template.HTML("Top Players")
-	content.LOGIN_HISTORY = template.HTML("History")
-	content.LOGIN_GUIDE = template.HTML("Guide")
+	content.LABEL_USERNAME = s.language.PrintfHTML("LABEL_USERNAME")
+	content.LABEL_PASSWORD = s.language.PrintfHTML("LABEL_PASSWORD")
+	content.LOGIN_SUBMIT = s.language.Printf("LOGIN_SUBMIT")
+	if ROUND_SIGNUP && !(SIGNUP_CLOSED_USER && SIGNUP_CLOSED_EMPIRE) {
+		content.SignupStatus = template.HTML(fmt.Sprintf(`<a href="/index.php?location=signup"><b>%s</b></a><br />`, s.language.Printf("LOGIN_SIGNUP")))
+	} else {
+		content.SignupStatus = template.HTML(fmt.Sprintf(`<b>%s</b><br />`, s.language.Printf("LOGIN_SIGNUP_CLOSED")))
+	}
+	content.LOGIN_TOPEMPIRES = template.HTML(fmt.Sprintf(`<a href="/index.php?location=topempires"><b>%s</b></a><br />`, s.language.Printf("LOGIN_TOPEMPIRES")))
+	content.CLAN_ENABLE = CLAN_ENABLE
+	content.LOGIN_TOPCLANS = template.HTML(fmt.Sprintf(`<a href="/index.php?location=topclans"><b>%s</b></a><br />`, s.language.Printf("LOGIN_TOPCLANS")))
+	content.LOGIN_TOPPLAYERS = template.HTML(fmt.Sprintf(`<a href="/index.php?location=topplayers"><b>%s</b></a><br />`, s.language.Printf("LOGIN_TOPPLAYERS")))
+	content.LOGIN_HISTORY = template.HTML(fmt.Sprintf(`<a href="/index.php?location=history"><b>%s</b></a><br />`, s.language.Printf("LOGIN_HISTORY")))
+	content.LOGIN_GUIDE = template.HTML(fmt.Sprintf(`<a href="/index.php?location=guide"><b>%s</b></a><br />`, s.language.Printf("LOGIN_GUIDE")))
 	layout.Content = content
 
 	// render the login page template
