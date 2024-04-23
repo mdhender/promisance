@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -16,7 +17,7 @@ type LoginContent struct {
 	LOGIN_VERSION    template.HTML
 	LOGIN_DATE_RANGE template.HTML
 	LOGIN_COUNTER    template.HTML
-	Notices          []string // populate with 0 or 1, no more
+	NOTICES          template.HTML
 	LABEL_USERNAME   template.HTML
 	LABEL_PASSWORD   template.HTML
 	LOGIN_SUBMIT     string
@@ -41,15 +42,16 @@ func (s *server) loginGetHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/relogin", http.StatusSeeOther)
 		return
 	}
+
 	// explicitly destroy the session, which will clear the token cookie
 	s.sessions.Destroy(w)
-	log.Printf("%s %s: lgh: destroyed session\n", r.Method, r.URL)
 
 	// our response variables
 	content := LoginContent{
 		GAME_TITLE:       GAME_TITLE,
 		LOGIN_VERSION:    s.language.PrintfHTML("LOGIN_VERSION", GAME_VERSION),
 		LOGIN_DATE_RANGE: s.language.PrintfHTML("LOGIN_DATE_RANGE", s.world.RoundTimeBegin, s.world.RoundTimeEnd),
+		NOTICES:          s.noticesFromQueryParameter(r, 1),
 		LABEL_USERNAME:   s.language.PrintfHTML("LABEL_USERNAME"),
 		LABEL_PASSWORD:   s.language.PrintfHTML("LABEL_PASSWORD"),
 		LOGIN_SUBMIT:     s.language.Printf("LOGIN_SUBMIT"),
@@ -91,6 +93,7 @@ func (s *server) loginGetHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%s %s: lgh: rendering from template\n", r.Method, r.URL)
 	s.render(w, r, layout, "html_compact.gohtml", "login.gohtml")
 }
+
 func (s *server) loginPostHandler(w http.ResponseWriter, r *http.Request) {
 	// Get the form values
 	username := r.FormValue("login_username")
@@ -99,7 +102,27 @@ func (s *server) loginPostHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%s %s: login_password: %q", r.Method, r.URL, password)
 
 	// Validate the form inputs
-	// ...
+	var notices []string
+	if username == "" {
+		notices = append(notices, s.language.Printf("INPUT_NEED_USERNAME"))
+	} else if strings.TrimSpace(username) != username {
+		notices = append(notices, "Username must not start or end with spaces.")
+	}
+	if password == "" {
+		notices = append(notices, s.language.Printf("INPUT_NEED_PASSWORD"))
+	} else if strings.TrimSpace(password) != password {
+		notices = append(notices, "Password must not start or end with spaces.")
+	}
+	if len(notices) != 0 {
+		log.Printf("%s %s: notices %v\n", r.Method, r.URL, notices)
+		args, ok := s.noticesToQueryParameters(notices)
+		if !ok {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+		http.Redirect(w, r, "/login?"+args, http.StatusSeeOther)
+		return
+	}
 
 	// Authenticate the user
 	if !s.authenticator.Authenticate(username, password) {

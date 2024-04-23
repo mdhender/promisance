@@ -4,6 +4,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -523,4 +524,36 @@ func (s *server) assetsHandler(assetsPath string) http.HandlerFunc {
 		// that server deals with the request and then goes away.
 		http.FileServer(http.Dir(assetsPath)).ServeHTTP(w, r)
 	}
+}
+func (s *server) noticesToQueryParameters(notices []string) (string, bool) {
+	var parms string
+	for _, notice := range notices {
+		if parms != "" {
+			parms += "&"
+		}
+		parms += "notice=" + base64.URLEncoding.EncodeToString([]byte(notice))
+	}
+	if len(parms) == 0 {
+		return "", false
+	}
+	return parms, true
+}
+func (s *server) noticesFromQueryParameter(r *http.Request, style int) template.HTML {
+	log.Printf("%s %s: nfqp: style %d\n", r.Method, r.URL.Path, style)
+	args := r.URL.Query()["notice"]
+	log.Printf("%s %s: nfqp: args  %v\n", r.Method, r.URL.Path, args)
+	if len(args) == 0 {
+		return ""
+	}
+	var notices []string
+	for n, arg := range args {
+		log.Printf("%s %s: nfqp: arg   %d %q\n", r.Method, r.URL.Path, n, arg)
+		if len(arg) != 0 {
+			if msg, err := base64.URLEncoding.DecodeString(arg); err == nil && len(msg) != 0 {
+				log.Printf("%s %s: nfqp: msg   %d %q\n", r.Method, r.URL.Path, n, string(msg))
+				notices = append(notices, string(msg))
+			}
+		}
+	}
+	return s.notices(style, notices)
 }
