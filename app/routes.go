@@ -31,6 +31,7 @@ func (s *server) routes(valid_locations map[string]int) http.Handler {
 			http.Redirect(w, r, "/site-map", http.StatusTemporaryRedirect)
 		})
 		r.Get("/site-map", s.sitemapHandler)
+		r.Get("/index.php", s.indexPhpHandler)
 	})
 
 	// login/logout pages, no authentication required, do not cache
@@ -167,6 +168,24 @@ func (s *server) handleSetup() http.HandlerFunc {
 
 		http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
 	}
+}
+
+func (s *server) indexPhpHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("%s %s: referer %s\n", r.Method, r.URL, r.Referer())
+	location := r.URL.Query().Get("location")
+	if location == "" {
+		log.Printf("%s %s: no location parameter\n", r.Method, r.URL)
+		http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
+		return
+	}
+	log.Printf("%s %s: location %q\n", r.Method, r.URL, location)
+	scheme := "http"
+	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
+		scheme = "https"
+	}
+	locationURL := fmt.Sprintf("%s://%s/%s", scheme, r.Host, location)
+	log.Printf("%s %s: redirecting to %s\n", r.Method, r.URL, locationURL)
+	http.Redirect(w, r, locationURL, http.StatusSeeOther)
 }
 
 func (s *server) adminClansHandler(w http.ResponseWriter, r *http.Request) {
