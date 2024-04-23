@@ -32,18 +32,18 @@ type LoginContent struct {
 func (s *server) loginGetHandler(w http.ResponseWriter, r *http.Request) {
 	started := time.Now()
 
-	// redirect to the main page if the user is authenticated
+	// if the session cookie is set, redirect to the main page.
+	// if the session is invalid, that page will delete it and redirect them back to here
 	user := s.sessions.User(r)
 	log.Printf("%s %s: lgh: user %+v\n", r.Method, r.URL, user)
+	log.Printf("%s %s: lgh: user: authenticated %v\n", r.Method, r.URL, user.IsAuthenticated())
 	if user.IsAuthenticated() {
-		log.Printf("%s %s: lgh: user is authenticated\n", r.Method, r.URL)
-		http.Redirect(w, r, "/main", http.StatusSeeOther)
+		http.Redirect(w, r, "/relogin", http.StatusSeeOther)
 		return
 	}
-	log.Printf("%s %s: lgh: user is not authenticated\n", r.Method, r.URL)
-	// explicitly clear the token cookie
-	log.Printf("%s %s: lgh: deleted cookies\n", r.Method, r.URL)
-	s.sessions.DeleteCookie(w)
+	// explicitly destroy the session, which will clear the token cookie
+	s.sessions.Destroy(w)
+	log.Printf("%s %s: lgh: destroyed session\n", r.Method, r.URL)
 
 	// our response variables
 	content := LoginContent{
@@ -53,15 +53,19 @@ func (s *server) loginGetHandler(w http.ResponseWriter, r *http.Request) {
 		LABEL_USERNAME:   s.language.PrintfHTML("LABEL_USERNAME"),
 		LABEL_PASSWORD:   s.language.PrintfHTML("LABEL_PASSWORD"),
 		LOGIN_SUBMIT:     s.language.Printf("LOGIN_SUBMIT"),
-		LOGIN_TOPEMPIRES: template.HTML(fmt.Sprintf(`<a href="/index.php?location=topempires"><b>%s</b></a><br />`, s.language.Printf("LOGIN_TOPEMPIRES"))),
+		LOGIN_TOPEMPIRES: template.HTML(fmt.Sprintf(`<a href="/topempires"><b>%s</b></a><br />`, s.language.Printf("LOGIN_TOPEMPIRES"))),
 		CLAN_ENABLE:      CLAN_ENABLE,
-		LOGIN_TOPCLANS:   template.HTML(fmt.Sprintf(`<a href="/index.php?location=topclans"><b>%s</b></a><br />`, s.language.Printf("LOGIN_TOPCLANS"))),
-		LOGIN_TOPPLAYERS: template.HTML(fmt.Sprintf(`<a href="/index.php?location=topplayers"><b>%s</b></a><br />`, s.language.Printf("LOGIN_TOPPLAYERS"))),
-		LOGIN_HISTORY:    template.HTML(fmt.Sprintf(`<a href="/index.php?location=history"><b>%s</b></a><br />`, s.language.Printf("LOGIN_HISTORY"))),
-		LOGIN_GUIDE:      template.HTML(fmt.Sprintf(`<a href="/index.php?location=guide"><b>%s</b></a><br />`, s.language.Printf("LOGIN_GUIDE"))),
+		LOGIN_TOPCLANS:   template.HTML(fmt.Sprintf(`<a href="/topclans"><b>%s</b></a><br />`, s.language.Printf("LOGIN_TOPCLANS"))),
+		LOGIN_TOPPLAYERS: template.HTML(fmt.Sprintf(`<a href="/topplayers"><b>%s</b></a><br />`, s.language.Printf("LOGIN_TOPPLAYERS"))),
+		LOGIN_HISTORY:    template.HTML(fmt.Sprintf(`<a href="/history"><b>%s</b></a><br />`, s.language.Printf("LOGIN_HISTORY"))),
+		LOGIN_GUIDE:      template.HTML(fmt.Sprintf(`<a href="/guide"><b>%s</b></a><br />`, s.language.Printf("LOGIN_GUIDE"))),
 	}
-	num := 3 // $db->queryCell('SELECT COUNT(*) FROM '. EMPIRE_TABLE .' WHERE u_id != 0');
-	content.LOGIN_COUNTER = template.HTML(fmt.Sprintf("<b>%03d</b>", num))
+	if num, err := s.db.EmpireActiveCount(); err != nil {
+		log.Printf("%s %s: empireActiveCount: %v\n", r.Method, r.URL, err)
+		content.LOGIN_COUNTER = "<b>***</b>"
+	} else {
+		content.LOGIN_COUNTER = template.HTML(fmt.Sprintf("<b>%03d</b>", num))
+	}
 	if COUNTER_TEMPLATE != "" {
 		log.Printf("%s %s: counter template is not implemented\n", r.Method, r.URL)
 		//counter, err := getimagesize(filepath.Join(PROM_BASEDIR, "images", COUNTER_TEMPLATE))
@@ -72,7 +76,7 @@ func (s *server) loginGetHandler(w http.ResponseWriter, r *http.Request) {
 		//}
 	}
 	if ROUND_SIGNUP && !(SIGNUP_CLOSED_USER && SIGNUP_CLOSED_EMPIRE) {
-		content.SignupStatus = template.HTML(fmt.Sprintf(`<a href="/index.php?location=signup"><b>%s</b></a><br />`, s.language.Printf("LOGIN_SIGNUP")))
+		content.SignupStatus = template.HTML(fmt.Sprintf(`<a href="/signup"><b>%s</b></a><br />`, s.language.Printf("LOGIN_SIGNUP")))
 	} else {
 		content.SignupStatus = template.HTML(fmt.Sprintf(`<b>%s</b><br />`, s.language.Printf("LOGIN_SIGNUP_CLOSED")))
 	}

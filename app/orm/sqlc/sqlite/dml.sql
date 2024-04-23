@@ -20,6 +20,11 @@ INSERT INTO empire (u_id, e_name, e_race)
 VALUES (?, ?, ?)
 RETURNING e_id;
 
+-- name: EmpireActiveCount :one
+SELECT COUNT(*)
+FROM empire
+WHERE u_id != 0;
+
 -- name: EmpireAttributesUpdate :exec
 UPDATE empire
 SET e_flags       = ?,

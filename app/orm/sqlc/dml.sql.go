@@ -48,6 +48,19 @@ func (q *Queries) ClanFetch(ctx context.Context, cID int64) (Clan, error) {
 	return i, err
 }
 
+const empireActiveCount = `-- name: EmpireActiveCount :one
+SELECT COUNT(*)
+FROM empire
+WHERE u_id != 0
+`
+
+func (q *Queries) EmpireActiveCount(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, empireActiveCount)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const empireAttributesUpdate = `-- name: EmpireAttributesUpdate :exec
 UPDATE empire
 SET e_flags       = ?,

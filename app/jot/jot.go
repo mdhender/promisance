@@ -88,7 +88,14 @@ func (f *Factory_t) User(r *http.Request) User_t {
 
 }
 
-func (f *Factory_t) DeleteCookie(w http.ResponseWriter) {
+func (f *Factory_t) Destroy(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Path:     f.cookie.path,
+		Name:     f.cookie.name,
+		Expires:  time.Unix(0, 0),
+		HttpOnly: true,
+		Secure:   true,
+	})
 	http.SetCookie(w, &http.Cookie{
 		Path:     f.cookie.path,
 		Name:     "fh-auth",
@@ -98,7 +105,7 @@ func (f *Factory_t) DeleteCookie(w http.ResponseWriter) {
 	})
 	http.SetCookie(w, &http.Cookie{
 		Path:     f.cookie.path,
-		Name:     f.cookie.name,
+		Name:     "session_id",
 		Expires:  time.Unix(0, 0),
 		HttpOnly: true,
 		Secure:   true,

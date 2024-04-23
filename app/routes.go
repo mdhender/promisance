@@ -319,7 +319,7 @@ func (s *server) getCompactFooter(started time.Time) *CompactFooterPayload {
 }
 
 func (s *server) logoutHandler(w http.ResponseWriter, r *http.Request) {
-	s.sessions.DeleteCookie(w)
+	s.sessions.Destroy(w)
 	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
 }
 func (s *server) lotteryHandler(w http.ResponseWriter, r *http.Request) {

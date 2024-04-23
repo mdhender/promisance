@@ -81,6 +81,14 @@ const (
 	UFLAG_WATCH   = 0x20 // User account is suspected of abuse
 )
 
+func (db *DB) EmpireActiveCount() (int, error) {
+	count, err := db.db.EmpireActiveCount(db.ctx)
+	if err != nil {
+		return 0, err
+	}
+	return int(count), nil
+}
+
 func (db *DB) EmpireCreate(user *model.User_t, name string, race string) (*model.Empire_t, error) {
 	var raceFlag int64
 	switch race {
