@@ -1,23 +1,38 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Login</title>
-    <link rel="stylesheet" href="https://unpkg.com/missing.css@1.1.1">
-</head>
-<body>
-<main>
-    <form method="post" action="/login" class="box rows">
-        <p>
-            <label for="login_username">Username</label>
-            <input type="text" name="login_username" size="18" id="login_username" value="basque"/>
-        </p>
-        <p>
-            <label for="login_username">Password</label>
-            <input type="password" name="login_password" size="18" id="login_password" value="bisque"/>
-        </p>
-        <input type="submit" value="Login"/>
-    </form>
-</main>
-</body>
-</html>
+{{define "content"}}{{- /*gotype:github.com/mdhender/promisance/app.LoginTemplateData*/ -}}
+<h2>{{.GAME_TITLE}}</h2>
+{{.GAME_VERSION}}<br />
+LOGIN_DATE_RANGE
+{{.World.RoundTimeBegin}}
+{{.World.RoundTimeEnd}}
+<br />
+<b>{{.CountData}}</b>
+<br />
+{{range .Notices}}{{.}}{{end}}
+
+<form method="post" action="/login" class="box rows">
+    <p>
+        <label for="login_username">{{.LABEL_USERNAME}}</label>
+        <input type="text" name="login_username" size="18" id="login_username" value="basque"/>
+    </p>
+    <p>
+        <label for="login_username">{{.LABEL_PASSWORD}}</label>
+        <input type="password" name="login_password" size="18" id="login_password" value="bisque"/>
+    </p>
+    <input type="hidden" name="action" value="login" />
+    <input type="submit" value="{{.LOGIN_SUBMIT}}"/>
+</form>
+
+{{if .SignupOpen}}
+<a href="?location=signup"><b>{{.LOGIN_SIGNUP}}</b></a><br />
+{{else}}
+<b>{{.LOGIN_SIGNUP_CLOSED}}</b><br />
+{{end}}
+<a href="?location=topempires"><b>{{.LOGIN_TOPEMPIRES}}'</b></a><br />
+{{if .CLAN_ENABLE}}
+<a href="?location=topclans"><b>{{.LOGIN_TOPCLANS}}</b></a><br />
+{{end}}
+<br />
+<a href="?location=topplayers"><b>{{.LOGIN_TOPPLAYERS}}</b></a><br />
+<a href="?location=history"><b>{{.LOGIN_HISTORY}}</b></a><br />
+<a href="?location=pguide"><b>{{.LOGIN_GUIDE}}</b></a><br />
+{{end}}

@@ -4,6 +4,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/mdhender/promisance/app/jot"
@@ -21,70 +22,94 @@ func (s *server) routes(valid_locations map[string]int) http.Handler {
 		panic("assert(sessions != nil)")
 	}
 
-	r := chi.NewRouter()
-	r.Use(middleware.Logger, s.sessions.Authenticator()) // , s.checkBannedIP(), s.validate_location(valid_locations), s.turnsCrontab(), s.setRoundTimes())
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/site-map", http.StatusTemporaryRedirect)
+	router := chi.NewRouter()
+
+	// public routes, no authentication required, okay to cache
+	router.Group(func(r chi.Router) {
+		r.Use(middleware.Logger)
+		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, "/site-map", http.StatusTemporaryRedirect)
+		})
+		r.Get("/site-map", s.sitemapHandler)
 	})
-	r.Get("/admin/clans", s.adminClansHandler)
-	r.Get("/admin/empedit", s.adminEmpeditHandler)
-	r.Get("/admin/empires", s.adminEmpiresHandler)
-	r.Get("/admin/history", s.adminHistoryHandler)
-	r.Get("/admin/log", s.adminLogHandler)
-	r.Get("/admin/market", s.adminMarketHandler)
-	r.Get("/admin/messages", s.adminMessagesHandler)
-	r.Get("/admin/permissions", s.adminPermissionsHandler)
-	r.Get("/admin/round", s.adminRoundHandler)
-	r.Get("/admin/users", s.adminUsersHandler)
-	r.Get("/aid", s.aidHandler)
-	r.Get("/bank", s.bankHandler)
-	r.Get("/banner", s.bannerHandler)
-	r.Get("/build", s.buildHandler)
-	r.Get("/cash", s.cashHandler)
-	r.Get("/clan", s.clanHandler)
-	r.Get("/clanforum", s.clanforumHandler)
-	r.Get("/clanstats", s.clanstatsHandler)
-	r.Get("/contacts", s.contactsHandler)
-	r.Get("/count", s.countHandler)
-	r.Get("/credits", s.creditsHandler)
-	r.Get("/delete", s.deleteHandler)
-	r.Get("/demolish", s.demolishHandler)
-	r.Get("/farm", s.farmHandler)
-	r.Get("/game", s.gameHandler)
-	r.Get("/graveyard", s.graveyardHandler)
-	r.Get("/guide", s.guideHandler)
-	r.Get("/history", s.historyHandler)
-	r.Get("/land", s.landHandler)
-	r.Get("/login", s.loginGetHandler)
-	r.Post("/login", s.loginPostHandler)
-	r.Get("/logout", s.logoutHandler)
-	r.Get("/lottery", s.lotteryHandler)
-	r.Get("/magic", s.magicHandler)
-	r.Get("/main", s.mainHandler)
-	r.Get("/manage/clan", s.manageClansHandler)
-	r.Get("/manage/empire", s.manageEmpireHandler)
-	r.Get("/manage/user", s.manageUserHandler)
-	r.Get("/messages", s.messagesHandler)
-	r.Get("/military", s.militaryHandler)
-	r.Get("/news", s.newsHandler)
-	r.Get("/pguide", s.pguideHandler)
-	r.Get("/playerstats", s.playerstatsHandler)
-	r.Get("/pubmarketbuy", s.pubmarketbuyHandler)
-	r.Get("/pubmarketsell", s.pubmarketsellHandler)
-	r.Get("/pvtmarketbuy", s.pvtmarketbuyHandler)
-	r.Get("/pvtmarketsell", s.pvtmarketsellHandler)
-	r.Get("/relogin", s.reloginHandler)
-	r.Get("/revalidate", s.revalidateHandler)
-	r.Get("/scores", s.scoresHandler)
-	r.Get("/search", s.searchHandler)
-	r.Get("/signup", s.signupHandler)
-	r.Get("/site-map", s.sitemapHandler)
-	r.Get("/status", s.statusHandler)
-	r.Get("/topclans", s.topclansHandler)
-	r.Get("/topempires", s.topempiresHandler)
-	r.Get("/topplayers", s.topplayersHandler)
-	r.Get("/validate", s.validateHandler)
-	return r
+
+	// login/logout pages, no authentication required, do no cache
+	router.Group(func(r chi.Router) {
+		r.Use(middleware.Logger)
+		r.Get("/login", s.loginGetHandler)
+		r.Post("/login", s.loginPostHandler)
+		r.Get("/logout", s.logoutHandler)
+	})
+
+	// , s.checkBannedIP(), s.validate_location(valid_locations), s.turnsCrontab(), s.setRoundTimes())
+
+	// admin pages, authentication required, do not cache
+	router.Group(func(r chi.Router) {
+		r.Use(middleware.Logger, middleware.NoCache, s.sessions.Authenticator())
+		r.Get("/admin/clans", s.adminClansHandler)
+		r.Get("/admin/empedit", s.adminEmpeditHandler)
+		r.Get("/admin/empires", s.adminEmpiresHandler)
+		r.Get("/admin/history", s.adminHistoryHandler)
+		r.Get("/admin/log", s.adminLogHandler)
+		r.Get("/admin/market", s.adminMarketHandler)
+		r.Get("/admin/messages", s.adminMessagesHandler)
+		r.Get("/admin/permissions", s.adminPermissionsHandler)
+		r.Get("/admin/round", s.adminRoundHandler)
+		r.Get("/admin/users", s.adminUsersHandler)
+	})
+
+	// player pages, authentication required, do not cache
+	router.Group(func(r chi.Router) {
+		r.Use(middleware.Logger, middleware.NoCache, s.sessions.Authenticator())
+		r.Get("/aid", s.aidHandler)
+		r.Get("/bank", s.bankHandler)
+		r.Get("/banner", s.bannerHandler)
+		r.Get("/build", s.buildHandler)
+		r.Get("/cash", s.cashHandler)
+		r.Get("/clan", s.clanHandler)
+		r.Get("/clanforum", s.clanforumHandler)
+		r.Get("/clanstats", s.clanstatsHandler)
+		r.Get("/contacts", s.contactsHandler)
+		r.Get("/count", s.countHandler)
+		r.Get("/credits", s.creditsHandler)
+		r.Get("/delete", s.deleteHandler)
+		r.Get("/demolish", s.demolishHandler)
+		r.Get("/farm", s.farmHandler)
+		r.Get("/game", s.gameHandler)
+		r.Get("/graveyard", s.graveyardHandler)
+		r.Get("/guide", s.guideHandler)
+		r.Get("/history", s.historyHandler)
+		r.Get("/land", s.landHandler)
+		r.Get("/lottery", s.lotteryHandler)
+		r.Get("/magic", s.magicHandler)
+		r.Get("/main", s.mainHandler)
+		r.Get("/manage/clan", s.manageClansHandler)
+		r.Get("/manage/empire", s.manageEmpireHandler)
+		r.Get("/manage/user", s.manageUserHandler)
+		r.Get("/messages", s.messagesHandler)
+		r.Get("/military", s.militaryHandler)
+		r.Get("/news", s.newsHandler)
+		r.Get("/pguide", s.pguideHandler)
+		r.Get("/playerstats", s.playerstatsHandler)
+		r.Get("/pubmarketbuy", s.pubmarketbuyHandler)
+		r.Get("/pubmarketsell", s.pubmarketsellHandler)
+		r.Get("/pvtmarketbuy", s.pvtmarketbuyHandler)
+		r.Get("/pvtmarketsell", s.pvtmarketsellHandler)
+		r.Get("/relogin", s.reloginHandler)
+		r.Get("/revalidate", s.revalidateHandler)
+		r.Get("/scores", s.scoresHandler)
+		r.Get("/search", s.searchHandler)
+		r.Get("/signup", s.signupHandler)
+		r.Get("/status", s.statusHandler)
+		r.Get("/topclans", s.topclansHandler)
+		r.Get("/topempires", s.topempiresHandler)
+		r.Get("/topplayers", s.topplayersHandler)
+		r.Get("/validate", s.validateHandler)
+	})
+
+	router.NotFound(s.assetsHandler(s.public))
+
+	return router
 }
 
 func (s *server) handleNotAuthorized() http.HandlerFunc {
@@ -231,7 +256,67 @@ func (s *server) historyHandler(w http.ResponseWriter, r *http.Request) {
 func (s *server) landHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
 }
+
+type CompactLayoutTemplateData struct {
+	Page  string // internal name of the page?
+	Title string
+	Begin struct {
+		StartTime  template.HTML
+		LANG_CODE  string
+		LANG_DIR   string
+		GetStyles  string   // $this->getstyle()
+		AddStyles  []string // $this->addStyles()
+		AddScripts []string // $this->addScripts()
+	}
+	Content any
+	End     struct {
+		Dur                string // now - $this.starttime
+		GAME_VERSION       template.HTML
+		HTML_LINK_CREDITS  string
+		HTML_LINK_LOGIN    string
+		DEBUG_FOOTER       bool
+		RoundDur           template.HTML
+		MemoryGetUsage     string
+		MemoryGetPeakUsage string
+		DB                 bool
+		GetQueryCount      int
+	}
+}
+type LoginTemplateData struct {
+	Num          string // $db->queryCell('SELECT COUNT(*) FROM '. EMPIRE_TABLE .' WHERE u_id != 0')
+	GAME_TITLE   template.HTML
+	GAME_VERSION template.HTML
+	World        struct {
+		RoundTimeBegin string
+		RoundTimeEnd   string
+	}
+	/*
+		if (strlen(COUNTER_TEMPLATE) > 0) {
+			$counter = getimagesize(PROM_BASEDIR .'images/'. COUNTER_TEMPLATE);
+			$count_data = '<img src="?location=count" alt="'. $num .'" style="width:'. ($counter[0] / 10 * strlen($num)) .'px;height:'. $counter[1] .'px" />';
+		} else {
+			$count_data = '<b>'. $num .'</b>';
+		}
+	*/
+	CountData           string
+	Notices             []string // populate with 0 or 1, no more
+	LABEL_USERNAME      template.HTML
+	LABEL_PASSWORD      template.HTML
+	LOGIN_SUBMIT        string
+	SignupOpen          bool // if (ROUND_SIGNUP && !(SIGNUP_CLOSED_USER && SIGNUP_CLOSED_EMPIRE))
+	LOGIN_SIGNUP        template.HTML
+	LOGIN_SIGNUP_CLOSED template.HTML
+	LOGIN_TOPEMPIRES    template.HTML
+	CLAN_ENABLE         bool
+	LOGIN_TOPCLANS      template.HTML
+	LOGIN_TOPPLAYERS    template.HTML
+	LOGIN_HISTORY       template.HTML
+	LOGIN_GUIDE         template.HTML
+}
+
 func (s *server) loginGetHandler(w http.ResponseWriter, r *http.Request) {
+	started := time.Now()
+
 	// redirect to the main page if the user is authenticated
 	user := s.sessions.User(r)
 	log.Printf("%s %s: lgh: user %+v\n", r.Method, r.URL, user)
@@ -242,24 +327,44 @@ func (s *server) loginGetHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("%s %s: lgh: user is not authenticated\n", r.Method, r.URL)
 	// explicitly clear the token cookie
+	log.Printf("%s %s: lgh: deleted cookies\n", r.Method, r.URL)
 	s.sessions.DeleteCookie(w)
 
+	// our response variables
+	var layout CompactLayoutTemplateData
+	layout.Page = "login"
+	layout.Title = "login"
+	layout.Begin.StartTime = template.HTML(started.Format(time.RFC850))
+	layout.Begin.LANG_CODE = "en"
+	layout.Begin.LANG_DIR = "ltr"
+	layout.Begin.GetStyles = "qmt.css"
+	layout.End.GAME_VERSION = template.HTML(GAME_VERSION)
+	layout.End.RoundDur = template.HTML(fmt.Sprintf("%v", time.Now().Sub(started)))
+	var content LoginTemplateData
+	content.Num = "123"
+	content.GAME_TITLE = template.HTML("Promisance")
+	content.GAME_VERSION = template.HTML(GAME_VERSION)
+	content.World.RoundTimeBegin = "2022-01-01 00:00:00"
+	content.World.RoundTimeEnd = "2022-01-01 23:59:59"
+	content.CountData = "<b>123</b>"
+	content.Notices = []string{"notice1"}
+	content.LABEL_USERNAME = template.HTML("Username")
+	content.LABEL_PASSWORD = template.HTML("Password")
+	content.LOGIN_SUBMIT = "Submit"
+	content.SignupOpen = true
+	content.LOGIN_SIGNUP = template.HTML("Signup")
+	content.LOGIN_SIGNUP_CLOSED = template.HTML("Signup Closed")
+	content.LOGIN_TOPEMPIRES = template.HTML("Top Empires")
+	content.CLAN_ENABLE = true
+	content.LOGIN_TOPCLANS = template.HTML("Top Clans")
+	content.LOGIN_TOPPLAYERS = template.HTML("Top Players")
+	content.LOGIN_HISTORY = template.HTML("History")
+	content.LOGIN_GUIDE = template.HTML("Guide")
+	layout.Content = content
+
 	// render the login page template
-	t, err := template.ParseFiles(filepath.Join(s.templates, "login.gohtml"))
-	if err != nil {
-		log.Printf("%s %s: parse template: %v", r.Method, r.URL, err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-	buf := &bytes.Buffer{}
-	if err := t.Execute(buf, nil); err != nil {
-		log.Printf("%s %s: render template: %v", r.Method, r.URL, err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(buf.Bytes())
+	log.Printf("%s %s: lgh: rendering from template\n", r.Method, r.URL)
+	s.render(w, r, layout, "html_compact.gohtml", "login.gohtml")
 }
 func (s *server) loginPostHandler(w http.ResponseWriter, r *http.Request) {
 	// Get the form values
@@ -485,4 +590,64 @@ func (s *server) topplayersHandler(w http.ResponseWriter, r *http.Request) {
 }
 func (s *server) validateHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
+}
+
+func (s *server) render(w http.ResponseWriter, r *http.Request, payload any, templates ...string) {
+	var files []string
+	for _, t := range templates {
+		files = append(files, filepath.Join(s.templates, t))
+	}
+
+	var err error
+	t, err := template.New("layout").Funcs(template.FuncMap{
+		"yield": func() (string, error) {
+			return "", fmt.Errorf("yield called unexpectedly.")
+		},
+	}).ParseFiles(files...)
+	if err != nil {
+		log.Printf("%s %s: template: parse: %v", r.Method, r.URL.Path, err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	buf := &bytes.Buffer{}
+	if err := t.ExecuteTemplate(buf, "layout", payload); err != nil {
+		log.Printf("%s %s: template: execute: %v", r.Method, r.URL, err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(buf.Bytes())
+}
+
+func (s *server) assetsHandler(assetsPath string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
+		// Join the assets path with the url path.
+		// Join calls path.Clean on the result for us automatically.
+		path := filepath.Join(assetsPath, r.URL.Path)
+
+		// check whether a file exists or is a directory at the given path
+		fi, err := os.Stat(path)
+		if err != nil || fi.IsDir() {
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
+		// todo: set cache control header to serve file for a month or so
+		// static files in this case need to be cache busted
+		// (usually by appending a hash to the filename)
+		// w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+
+		// otherwise, use http.FileServer to serve the asset.
+
+		// we're creating a new file server on every request.
+		// that server deals with the request and then goes away.
+		http.FileServer(http.Dir(assetsPath)).ServeHTTP(w, r)
+	}
 }

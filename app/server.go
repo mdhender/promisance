@@ -11,6 +11,7 @@ import (
 type server struct {
 	data          string // path to store data files
 	templates     string // path to template files
+	public        string // path to public files (sometimes called "assets")
 	addr          string
 	host          string
 	port          string

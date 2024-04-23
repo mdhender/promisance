@@ -39,8 +39,11 @@ func Execute(cfg *config) error {
 	serverCmd.Flags().StringVar(&serverArgs.data, "data", "", "path to data files")
 	serverCmd.Flags().StringVar(&serverArgs.host, "host", "localhost", "host to bind listener to")
 	serverCmd.Flags().StringVar(&serverArgs.port, "port", "8080", "port to bind listener to")
+	serverCmd.Flags().StringVar(&serverArgs.public, "public", "", "path to public files")
 	serverCmd.Flags().StringVar(&serverArgs.templates, "templates", "", "path to template files")
 	if err := serverCmd.MarkFlagRequired("data"); err != nil {
+		log.Fatalf("setup: markFlagRequired: %v\n", err)
+	} else if err = serverCmd.MarkFlagRequired("public"); err != nil {
 		log.Fatalf("setup: markFlagRequired: %v\n", err)
 	} else if err = serverCmd.MarkFlagRequired("templates"); err != nil {
 		log.Fatalf("setup: markFlagRequired: %v\n", err)
@@ -73,6 +76,7 @@ var serverArgs struct {
 	host      string
 	port      string
 	templates string // path to template files
+	public    string // path to public files
 }
 
 var serverCmd = &cobra.Command{
@@ -109,7 +113,9 @@ var serverCmd = &cobra.Command{
 
 		s := &server{
 			host: "localhost", port: "8080",
-			data: serverArgs.data, templates: serverArgs.templates,
+			data:      serverArgs.data,
+			public:    serverArgs.public,
+			templates: serverArgs.templates,
 		}
 		s.addr = net.JoinHostPort(s.host, s.port)
 		s.tz, _ = time.Now().Zone()
