@@ -26,11 +26,12 @@ func (s *server) routes(valid_locations map[string]int) http.Handler {
 	// public routes, no authentication required, okay to cache
 	router.Group(func(r chi.Router) {
 		r.Use(middleware.Logger)
-		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-			http.Redirect(w, r, "/site-map", http.StatusTemporaryRedirect)
-		})
-		r.Get("/site-map", s.sitemapHandler)
+		//r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		//	http.Redirect(w, r, "/site-map", http.StatusTemporaryRedirect)
+		//})
+		r.Get("/", s.indexPhpHandler)
 		r.Get("/index.php", s.indexPhpHandler)
+		r.Get("/site-map", s.sitemapHandler)
 	})
 
 	// login/logout pages, no authentication required, do not cache
