@@ -258,9 +258,9 @@ func (s *server) landHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 type CompactLayoutPayload struct {
-	Header  CompactHeaderPayload
+	Header  *CompactHeaderPayload
 	Content any
-	Footer  CompactFooterPayload
+	Footer  *CompactFooterPayload
 }
 type CompactHeaderPayload struct {
 	Page       string // internal name of the page?
@@ -278,6 +278,27 @@ type CompactFooterPayload struct {
 	DEBUG_FOOTER      bool
 	HTML_DEBUG_FOOTER template.HTML
 }
+
+func (s *server) getCompactHeader(page string) *CompactHeaderPayload {
+	return &CompactHeaderPayload{
+		Page:      page,
+		Title:     s.language.Printf("HTML_TITLE", "login"),
+		LANG_CODE: s.language.Printf("LANG_CODE"),
+		LANG_DIR:  s.language.Printf("LANG_DIR"),
+		GetStyles: "qmt.css",
+	}
+}
+func (s *server) getCompactFooter(started time.Time) *CompactFooterPayload {
+	dur, memUsage, peakMemUsage, queryCount := time.Now().Sub(started), 1, 2, 3
+	return &CompactFooterPayload{
+		HTML_FOOTER:       s.language.PrintfHTML("HTML_FOOTER", GAME_VERSION),
+		HTML_LINK_CREDITS: s.language.Printf("HTML_LINK_CREDITS"),
+		HTML_LINK_LOGIN:   s.language.Printf("HTML_LINK_LOGIN"),
+		DEBUG_FOOTER:      true,
+		HTML_DEBUG_FOOTER: s.language.PrintfHTML("HTML_DEBUG_FOOTER", dur, memUsage, peakMemUsage, queryCount),
+	}
+}
+
 type LoginContent struct {
 	GAME_TITLE       template.HTML
 	LOGIN_VERSION    template.HTML
@@ -313,22 +334,6 @@ func (s *server) loginGetHandler(w http.ResponseWriter, r *http.Request) {
 	s.sessions.DeleteCookie(w)
 
 	// our response variables
-	var layout CompactLayoutPayload
-	layout.Header = CompactHeaderPayload{
-		Page:      "login",
-		Title:     s.language.Printf("HTML_TITLE", "login"),
-		LANG_CODE: s.language.Printf("LANG_CODE"),
-		LANG_DIR:  s.language.Printf("LANG_DIR"),
-		GetStyles: "qmt.css",
-	}
-	dur, memUsage, peakMemUsage, queryCount := time.Now().Sub(started), 1, 2, 3
-	layout.Footer = CompactFooterPayload{
-		HTML_FOOTER:       s.language.PrintfHTML("HTML_FOOTER", GAME_VERSION),
-		HTML_LINK_CREDITS: s.language.Printf("HTML_LINK_CREDITS"),
-		HTML_LINK_LOGIN:   s.language.Printf("HTML_LINK_LOGIN"),
-		DEBUG_FOOTER:      true,
-		HTML_DEBUG_FOOTER: s.language.PrintfHTML("HTML_DEBUG_FOOTER", dur, memUsage, peakMemUsage, queryCount),
-	}
 	content := LoginContent{
 		GAME_TITLE:       GAME_TITLE,
 		LOGIN_VERSION:    s.language.PrintfHTML("LOGIN_VERSION", GAME_VERSION),
@@ -359,7 +364,12 @@ func (s *server) loginGetHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		content.SignupStatus = template.HTML(fmt.Sprintf(`<b>%s</b><br />`, s.language.Printf("LOGIN_SIGNUP_CLOSED")))
 	}
-	layout.Content = content
+
+	layout := CompactLayoutPayload{
+		Header:  s.getCompactHeader("login"),
+		Content: content,
+		Footer:  s.getCompactFooter(started),
+	}
 
 	// render the login page template
 	log.Printf("%s %s: lgh: rendering from template\n", r.Method, r.URL)
