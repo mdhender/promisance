@@ -81,8 +81,30 @@ const (
 	UFLAG_WATCH   = 0x20 // User account is suspected of abuse
 )
 
+func (db *DB) AuthenticatedUserFetch(username, password string) (*model.User_t, error) {
+	if username == "" || password == "" {
+		return nil, sql.ErrNoRows
+	}
+	row, err := db.db.AuthenticatedUserFetch(db.ctx, sqlc.AuthenticatedUserFetchParams{
+		UUsername: username,
+		UPassword: sql.NullString{Valid: true, String: password},
+	})
+	if err != nil {
+		return nil, err
+	}
+	user := &model.User_t{
+		Id:       int(row.UID),
+		UserName: row.UUsername,
+		Flags:    intToUserFlags(row.UFlags),
+	}
+	if row.UComment.Valid {
+		user.Comment = row.UComment.String
+	}
+	return user, nil
+}
+
 func (db *DB) EmpireActiveCount() (int, error) {
-	count, err := db.db.EmpireActiveCount(db.ctx)
+	count, err := db.db.EmpireActiveUserCount(db.ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -210,6 +232,13 @@ func (db *DB) EmpireAttributesUpdate(empire *model.Empire_t) error {
 	return db.db.EmpireAttributesUpdate(db.ctx, parms)
 }
 
+func (db *DB) EmpireUpdateFlags(empire *model.Empire_t) error {
+	return db.db.EmpireUpdateFlags(db.ctx, sqlc.EmpireUpdateFlagsParams{
+		EFlags: empireFlagsToInt(empire.Flags),
+		EID:    int64(empire.Id),
+	})
+}
+
 func (db *DB) UserCreate(userName, email string) (*model.User_t, error) {
 	if userName == "" {
 		return nil, fmt.Errorf("username must not be blank")
@@ -247,6 +276,34 @@ func (db *DB) UserCreate(userName, email string) (*model.User_t, error) {
 	}
 
 	return &user, nil
+}
+
+func (db *DB) UserAccessUpdate(user *model.User_t) error {
+	parms := sqlc.UserAccessUpdateParams{
+		ULastip: sql.NullString{Valid: true, String: user.LastIP},
+		UID:     int64(user.Id),
+	}
+	if lastDate, err := db.db.UserAccessUpdate(db.ctx, parms); err != nil {
+		return err
+	} else {
+		user.LastDate = lastDate.Time
+	}
+	return nil
+}
+
+func (db *DB) UserActiveEmpires(userId int) ([]*model.Empire_t, error) {
+	rows, err := db.db.UserActiveEmpires(db.ctx, sqlc.UserActiveEmpiresParams{
+		UID:    int64(userId),
+		EFlags: sql.NullInt64{Valid: true, Int64: EFLAG_DELETE},
+	})
+	if err != nil {
+		return nil, err
+	}
+	var empires []*model.Empire_t
+	for _, row := range rows {
+		empires = append(empires, &model.Empire_t{Id: int(row.EID), Flags: intToEmpireFlags(row.EFlags)})
+	}
+	return empires, nil
 }
 
 func (db *DB) UserAttributesUpdate(user *model.User_t) error {
@@ -378,4 +435,96 @@ func isValidEmailAddress(address string) bool {
 		return false
 	}
 	return true
+}
+
+func empireFlagsToInt(flags model.EmpireFlag_t) sql.NullInt64 {
+	var bits int
+	if flags.Admin {
+		bits |= EFLAG_ADMIN
+	}
+	if flags.Delete {
+		bits |= EFLAG_DELETE
+	}
+	if flags.Disable {
+		bits |= EFLAG_DISABLE
+	}
+	if flags.Logged {
+		bits |= EFLAG_LOGGED
+	}
+	if flags.Mod {
+		bits |= EFLAG_MOD
+	}
+	if flags.Multi {
+		bits |= EFLAG_MULTI
+	}
+	if flags.Notify {
+		bits |= EFLAG_NOTIFY
+	}
+	if flags.Online {
+		bits |= EFLAG_ONLINE
+	}
+	if flags.Silent {
+		bits |= EFLAG_SILENT
+	}
+	if flags.Valid {
+		bits |= EFLAG_VALID
+	}
+	return sql.NullInt64{Valid: true, Int64: int64(bits)}
+}
+
+func intToEmpireFlags(flags sql.NullInt64) model.EmpireFlag_t {
+	var bits int
+	if flags.Valid {
+		bits = int(flags.Int64)
+	}
+	return model.EmpireFlag_t{
+		Admin:   (bits & EFLAG_ADMIN) != 0,
+		Delete:  (bits & EFLAG_DELETE) != 0,
+		Disable: (bits & EFLAG_DISABLE) != 0,
+		Logged:  (bits & EFLAG_LOGGED) != 0,
+		Mod:     (bits & EFLAG_MOD) != 0,
+		Multi:   (bits & EFLAG_MULTI) != 0,
+		Notify:  (bits & EFLAG_NOTIFY) != 0,
+		Online:  (bits & EFLAG_ONLINE) != 0,
+		Silent:  (bits & EFLAG_SILENT) != 0,
+		Valid:   (bits & EFLAG_VALID) != 0,
+	}
+}
+
+func userFlagsToInt(flags model.UserFlag_t) sql.NullInt64 {
+	var bits int
+	if flags.Admin {
+		bits |= UFLAG_ADMIN
+	}
+	if flags.Closed {
+		bits |= UFLAG_CLOSED
+	}
+	if flags.Disabled {
+		bits |= UFLAG_DISABLE
+	}
+	if flags.Mod {
+		bits |= UFLAG_MOD
+	}
+	if flags.Valid {
+		bits |= UFLAG_VALID
+	}
+	if flags.Watch {
+		bits |= UFLAG_WATCH
+	}
+	return sql.NullInt64{Valid: true, Int64: int64(bits)}
+}
+
+func intToUserFlags(flags sql.NullInt64) model.UserFlag_t {
+	var bits int
+	if flags.Valid {
+		bits = int(flags.Int64)
+	}
+	return model.UserFlag_t{
+		Admin:    (bits & UFLAG_ADMIN) != 0,
+		Closed:   (bits & UFLAG_CLOSED) != 0,
+		Disabled: (bits & UFLAG_DISABLE) != 0,
+		Mod:      (bits & UFLAG_MOD) != 0,
+		Valid:    (bits & UFLAG_VALID) != 0,
+		Watch:    (bits & UFLAG_WATCH) != 0,
+	}
 }

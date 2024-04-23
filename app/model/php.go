@@ -103,6 +103,7 @@ type User_t struct {
 	Flags      UserFlag_t
 	Nickname   string
 	Email      string
+	Comment    string
 	Lang       string
 	DateFormat string
 	LastIP     string

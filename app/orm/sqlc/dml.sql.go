@@ -11,8 +11,69 @@ import (
 	"time"
 )
 
-const clanFetch = `-- name: ClanFetch :one
+const authenticatedEmailFetch = `-- name: AuthenticatedEmailFetch :one
+SELECT u_id, u_username, u_flags, u_comment
+FROM users
+WHERE u_email = ?
+  AND u_password = ?
+`
 
+type AuthenticatedEmailFetchParams struct {
+	UEmail    string
+	UPassword sql.NullString
+}
+
+type AuthenticatedEmailFetchRow struct {
+	UID       int64
+	UUsername string
+	UFlags    sql.NullInt64
+	UComment  sql.NullString
+}
+
+func (q *Queries) AuthenticatedEmailFetch(ctx context.Context, arg AuthenticatedEmailFetchParams) (AuthenticatedEmailFetchRow, error) {
+	row := q.db.QueryRowContext(ctx, authenticatedEmailFetch, arg.UEmail, arg.UPassword)
+	var i AuthenticatedEmailFetchRow
+	err := row.Scan(
+		&i.UID,
+		&i.UUsername,
+		&i.UFlags,
+		&i.UComment,
+	)
+	return i, err
+}
+
+const authenticatedUserFetch = `-- name: AuthenticatedUserFetch :one
+SELECT u_id, u_username, u_flags, u_comment
+FROM users
+WHERE u_username = ?
+  AND u_password = ?
+`
+
+type AuthenticatedUserFetchParams struct {
+	UUsername string
+	UPassword sql.NullString
+}
+
+type AuthenticatedUserFetchRow struct {
+	UID       int64
+	UUsername string
+	UFlags    sql.NullInt64
+	UComment  sql.NullString
+}
+
+func (q *Queries) AuthenticatedUserFetch(ctx context.Context, arg AuthenticatedUserFetchParams) (AuthenticatedUserFetchRow, error) {
+	row := q.db.QueryRowContext(ctx, authenticatedUserFetch, arg.UUsername, arg.UPassword)
+	var i AuthenticatedUserFetchRow
+	err := row.Scan(
+		&i.UID,
+		&i.UUsername,
+		&i.UFlags,
+		&i.UComment,
+	)
+	return i, err
+}
+
+const clanFetch = `-- name: ClanFetch :one
 SELECT c_id,
        c_name,
        c_password,
@@ -28,7 +89,6 @@ FROM clan
 WHERE c_id = ?
 `
 
-// Copyright (c) 2024 Michael D Henderson. All rights reserved.
 func (q *Queries) ClanFetch(ctx context.Context, cID int64) (Clan, error) {
 	row := q.db.QueryRowContext(ctx, clanFetch, cID)
 	var i Clan
@@ -48,14 +108,14 @@ func (q *Queries) ClanFetch(ctx context.Context, cID int64) (Clan, error) {
 	return i, err
 }
 
-const empireActiveCount = `-- name: EmpireActiveCount :one
+const empireActiveUserCount = `-- name: EmpireActiveUserCount :one
 SELECT COUNT(*)
 FROM empire
 WHERE u_id != 0
 `
 
-func (q *Queries) EmpireActiveCount(ctx context.Context) (int64, error) {
-	row := q.db.QueryRowContext(ctx, empireActiveCount)
+func (q *Queries) EmpireActiveUserCount(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, empireActiveUserCount)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -264,6 +324,83 @@ func (q *Queries) EmpireCreate(ctx context.Context, arg EmpireCreateParams) (int
 	return e_id, err
 }
 
+const empireUpdateFlags = `-- name: EmpireUpdateFlags :exec
+UPDATE empire
+SET e_flags = ?
+WHERE e_id = ?
+`
+
+type EmpireUpdateFlagsParams struct {
+	EFlags sql.NullInt64
+	EID    int64
+}
+
+func (q *Queries) EmpireUpdateFlags(ctx context.Context, arg EmpireUpdateFlagsParams) error {
+	_, err := q.db.ExecContext(ctx, empireUpdateFlags, arg.EFlags, arg.EID)
+	return err
+}
+
+const userAccessUpdate = `-- name: UserAccessUpdate :one
+UPDATE users
+SET u_lastip   = ?,
+    u_lastdate = datetime('now')
+WHERE u_id = ?
+RETURNING u_lastdate
+`
+
+type UserAccessUpdateParams struct {
+	ULastip sql.NullString
+	UID     int64
+}
+
+func (q *Queries) UserAccessUpdate(ctx context.Context, arg UserAccessUpdateParams) (sql.NullTime, error) {
+	row := q.db.QueryRowContext(ctx, userAccessUpdate, arg.ULastip, arg.UID)
+	var u_lastdate sql.NullTime
+	err := row.Scan(&u_lastdate)
+	return u_lastdate, err
+}
+
+const userActiveEmpires = `-- name: UserActiveEmpires :many
+SELECT e_id, e_flags
+FROM empire
+WHERE u_id = ?
+  AND e_flags & ? = 0
+ORDER BY e_id
+`
+
+type UserActiveEmpiresParams struct {
+	UID    int64
+	EFlags sql.NullInt64
+}
+
+type UserActiveEmpiresRow struct {
+	EID    int64
+	EFlags sql.NullInt64
+}
+
+func (q *Queries) UserActiveEmpires(ctx context.Context, arg UserActiveEmpiresParams) ([]UserActiveEmpiresRow, error) {
+	rows, err := q.db.QueryContext(ctx, userActiveEmpires, arg.UID, arg.EFlags)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []UserActiveEmpiresRow
+	for rows.Next() {
+		var i UserActiveEmpiresRow
+		if err := rows.Scan(&i.EID, &i.EFlags); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const userAttributesUpdate = `-- name: UserAttributesUpdate :one
 UPDATE users
 SET u_flags      = ?,
@@ -339,6 +476,7 @@ func (q *Queries) UserAttributesUpdate(ctx context.Context, arg UserAttributesUp
 }
 
 const userCreate = `-- name: UserCreate :one
+
 INSERT INTO users (u_username, u_email, u_createdate, u_lastdate)
 VALUES (?, ?, datetime('now'), datetime('now'))
 RETURNING u_id, u_createdate, u_lastdate
@@ -355,10 +493,36 @@ type UserCreateRow struct {
 	ULastdate   sql.NullTime
 }
 
+// Copyright (c) 2024 Michael D Henderson. All rights reserved.
 func (q *Queries) UserCreate(ctx context.Context, arg UserCreateParams) (UserCreateRow, error) {
 	row := q.db.QueryRowContext(ctx, userCreate, arg.UUsername, arg.UEmail)
 	var i UserCreateRow
 	err := row.Scan(&i.UID, &i.UCreatedate, &i.ULastdate)
+	return i, err
+}
+
+const userFetch = `-- name: UserFetch :one
+SELECT u_username, u_flags, u_comment, u_timezone
+FROM users
+WHERE u_id = ?
+`
+
+type UserFetchRow struct {
+	UUsername string
+	UFlags    sql.NullInt64
+	UComment  sql.NullString
+	UTimezone sql.NullInt64
+}
+
+func (q *Queries) UserFetch(ctx context.Context, uID int64) (UserFetchRow, error) {
+	row := q.db.QueryRowContext(ctx, userFetch, uID)
+	var i UserFetchRow
+	err := row.Scan(
+		&i.UUsername,
+		&i.UFlags,
+		&i.UComment,
+		&i.UTimezone,
+	)
 	return i, err
 }
 

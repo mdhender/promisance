@@ -12,6 +12,7 @@ const (
 	ErrCreateSchema        = Error("schema exists")
 	ErrDatabaseExists      = Error("database exists")
 	ErrForeignKeysDisabled = Error("foreign keys disabled")
+	ErrNotImplemented      = Error("not implemented")
 	ErrPragmaReturnedNil   = Error("pragma returned nil")
 	ErrUnknownLanguage     = Error("unknown language")
 )

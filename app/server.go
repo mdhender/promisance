@@ -3,9 +3,11 @@
 package main
 
 import (
+	"github.com/mdhender/promisance/app/authn"
 	"github.com/mdhender/promisance/app/jot"
 	"github.com/mdhender/promisance/app/model"
 	"github.com/mdhender/promisance/app/orm"
+	"log"
 )
 
 type server struct {
@@ -19,15 +21,11 @@ type server struct {
 	db            *orm.DB
 	world         *model.World_t
 	sessions      *jot.Factory_t
-	authenticator *Authenticator_t
+	authenticator *authn.Authenticator
 	language      *LanguageManager_t
 }
 
-type Authenticator_t struct {
-	user string
-	pass string
-}
-
-func (a *Authenticator_t) Authenticate(username, password string) bool {
-	return username == a.user && password == a.pass
+// log an event into the database
+func (s *server) logmsg(kind PHPLoggingConstants, msg string) {
+	log.Printf("todo: implement logmsg: %q\n", msg)
 }

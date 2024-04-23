@@ -125,72 +125,107 @@ func (s *server) loginPostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Authenticate the user
-	if !s.authenticator.Authenticate(username, password) {
+	user, err := s.authenticator.Authenticate(username, password)
+	if err != nil {
 		log.Printf("%s %s: lph: authentication failed\n", r.Method, r.URL)
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		args, ok := s.noticesToQueryParameters([]string{"Invalid credentials"})
+		if !ok {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+		http.Redirect(w, r, "/login?"+args, http.StatusSeeOther)
 		return
 	}
 	log.Printf("%s %s: lph: authentication succeded\n", r.Method, r.URL)
-	user := jot.User_t{UserId: 1, EmpireId: 1, Roles: map[string]bool{"authenticated": true}}
+	roles := s.authenticator.UserRoles(user)
+	roles["authenticated"] = true
+	jUser := jot.User_t{UserId: user.Id, EmpireId: 1, Roles: roles}
 	log.Printf("%s %s: user %v\n", r.Method, r.URL, user)
 
-	// create a new token and save it as a cookie
-	cookie, err := s.sessions.NewTokenCookie(7*24*time.Hour, user)
+	if user.UserName == "" {
+		// this should be impossible if authentication succeeded
+		notices = []string{s.language.Printf("LOGIN_USER_NOT_FOUND")}
+		s.logmsg(E_USER_NOTICE, "failed (load) - "+username)
+		args, ok := s.noticesToQueryParameters([]string{""})
+		if !ok {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+		http.Redirect(w, r, "/login?"+args, http.StatusSeeOther)
+		return
+	}
+
+	if user.Flags.Closed {
+		notices = []string{s.language.Printf("LOGIN_USER_CLOSED")}
+		s.logmsg(E_USER_NOTICE, "failed (closed) - "+username)
+		args, ok := s.noticesToQueryParameters([]string{""})
+		if !ok {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+		http.Redirect(w, r, "/login?"+args, http.StatusSeeOther)
+		return
+	}
+
+	// Retrieve the associated empires
+	empList, err := s.db.UserActiveEmpires(user.Id)
+	if err != nil {
+		log.Printf("%s %s: lph: error retrieving empires: %v\n", r.Method, r.URL, err)
+		log.Printf("%s %s: %s\n", r.Method, r.URL, s.language.Printf("ERROR_TITLE", "Failed to check for registered empires"))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	// Check if the user has any empires. If they do, fetch just the first one.
+	if len(empList) == 0 {
+		log.Printf("%s %s: empList is empty\n", r.Method, r.URL)
+		// if they've signed up before but don't have an empire, bounce them over to the signup page
+		if !ROUND_SIGNUP {
+			log.Printf("%s %s: empList is empty: ROUND_SIGNUP is false\n", r.Method, r.URL)
+			if args, ok := s.noticesToQueryParameters([]string{s.language.Printf("LOGIN_NO_EMPIRE")}); ok {
+				http.Redirect(w, r, "/login?"+args, http.StatusSeeOther)
+				return
+			}
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		} else if SIGNUP_CLOSED_EMPIRE {
+			log.Printf("%s %s: empList is empty: SIGNUP_CLOSED_EMPIRE is true\n", r.Method, r.URL)
+			if args, ok := s.noticesToQueryParameters([]string{s.language.Printf("LOGIN_NO_EMPIRE_CLOSED")}); ok {
+				http.Redirect(w, r, "/login?"+args, http.StatusSeeOther)
+				return
+			}
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+		log.Printf("%s %s: redirecting before saving session cookies\n", r.Method, r.URL)
+		http.Redirect(w, r, "/signup&registered="+username, http.StatusSeeOther)
+		return
+	}
+
+	// use the first empire owned by this user when creating the session
+	jUser.EmpireId = empList[0].Id
+	cookie, err := s.sessions.NewTokenCookie(7*24*time.Hour, jUser)
 	if err != nil {
 		log.Printf("%s %s: lph: sessions token failed: %v\n", r.Method, r.URL, err)
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 	http.SetCookie(w, cookie)
+	log.Printf("%s %s: session cookie %v\n", r.Method, r.URL, cookie)
 
-	//	// Retrieve the associated empires
-	//	empires, err := h.getEmpires(user.ID)
-	//	if err != nil {
-	//		// Handle error retrieving empires
-	//		// ...
-	//		return
-	//	}
-	//
-	//	// Check if the user has any empires
-	//	if len(empires) == 0 {
-	//		// Handle the case where the user has no empires
-	//		// ...
-	//		return
-	//	}
-	//
-	//	// Load the first empire
-	//	empire := empires[0]
-	//
-	//	// Initialize the session
-	//	err = h.session.Start(w, r)
-	//	if err != nil {
-	//		// Handle session initialization error
-	//		// ...
-	//		return
-	//	}
-	//
-	//	// Set the user and empire in the session
-	//	h.session.Set("user", user)
-	//	h.session.Set("empire", empire)
-	//
-	//	// Update the user's last IP and last date
-	//	user.LastIP = r.RemoteAddr
-	//	user.LastDate = time.Now()
-	//
-	//	// Save the user and empire
-	//	err = h.db.SaveUser(user)
-	//	if err != nil {
-	//		// Handle error saving user
-	//		// ...
-	//		return
-	//	}
-	//
-	//	err = h.db.SaveEmpire(empire)
-	//	if err != nil {
-	//		// Handle error saving empire
-	//		// ...
-	//		return
-	//	}
+	// only set them online if the round has actually started
+	if ROUND_STARTED {
+		empList[0].Flags.Online = true
+		if err := s.db.EmpireUpdateFlags(empList[0]); err != nil {
+			log.Printf("%s %s: empireUpdateFlags failed: %v\n", r.Method, r.URL, err)
+		}
+	}
+
+	// Update the user's last IP and last date
+	user.LastIP, user.LastDate = r.RemoteAddr, time.Now().UTC()
+	if err := s.db.UserAccessUpdate(user); err != nil {
+		log.Printf("%s %s: userAccessUpdate failed: %v\n", r.Method, r.URL, err)
+	}
 
 	// Redirect to the game location
 	http.Redirect(w, r, "/game", http.StatusSeeOther)

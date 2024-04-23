@@ -6,6 +6,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/mdhender/promisance/app/authn"
 	"github.com/mdhender/promisance/app/jot"
 	"github.com/mdhender/promisance/app/model"
 	"github.com/mdhender/promisance/app/orm"
@@ -111,6 +112,7 @@ var serverCmd = &cobra.Command{
 		}
 		log.Printf("server: templates %s\n", serverArgs.templates)
 
+		var err error
 		s := &server{
 			host: "localhost", port: "8080",
 			data:      serverArgs.data,
@@ -119,7 +121,6 @@ var serverCmd = &cobra.Command{
 		}
 		s.addr = net.JoinHostPort(s.host, s.port)
 		s.tz, _ = time.Now().Zone()
-		s.authenticator = &Authenticator_t{"basque", "bisque"}
 		fibSigner, err := jot.NewHS256Signer("fib", []byte("signing-key"), 21*24*time.Hour)
 		if err != nil {
 			log.Fatalf("error: jot.NewHS256Signer: %v\n", err)
@@ -230,6 +231,11 @@ var serverCmd = &cobra.Command{
 			}
 			log.Printf("server: db closed\n")
 		}()
+
+		s.authenticator, err = authn.New(s.db)
+		if err != nil {
+			log.Fatalf("error: authn.New: %v\n", err)
+		}
 
 		// world data is a one time load that is shared with all the handlers
 		s.world, err = s.db.WorldVarsFetch()

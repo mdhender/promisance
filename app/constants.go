@@ -166,6 +166,29 @@ const (
 	SPELLRESULT_SUCCESS             = 2
 )
 
+// PHPLoggingConstants (https://www.php.net/manual/en/errorfunc.constants.php)
+type PHPLoggingConstants int
+
+const (
+	E_ERROR             PHPLoggingConstants = 0x0001 // Fatal run-time errors.
+	E_WARNING                               = 0x0002 // Run-time warnings (non-fatal errors).
+	E_PARSE                                 = 0x0004 // Compile-time parse errors.
+	E_NOTICE                                = 0x0008 // Run-time notices.
+	E_CORE_ERROR                            = 0x0010 // Fatal errors that occur during PHP's initial startup.
+	E_CORE_WARNING                          = 0x0020 // Warnings (non-fatal errors) that occur during PHP's initial startup.
+	E_COMPILE_ERROR                         = 0x0040 // Fatal compile-time errors.
+	E_COMPILE_WARNING                       = 0x0080 // Compile-time warnings (non-fatal errors).
+	E_USER_ERROR                            = 0x0100 // User-generated error message.
+	E_USER_WARNING                          = 0x0200 // User-generated warning message.
+	E_USER_NOTICE                           = 0x0400 // User-generated notice message.
+	E_STRICT                                = 0x0800 // Enable to have PHP suggest changes to your code which will ensure the best interoperability and forward compatibility of your code.
+	E_RECOVERABLE_ERROR                     = 0x1000 // Catchable fatal error.
+	E_DEPRECATED                            = 0x2000 // Run-time notices.
+	E_USER_DEPRECATED                       = 0x4000 // User-generated warning message.
+	E_ALL                                   = 0xFFFF // All errors, warnings, and notices.
+
+)
+
 // global variable constants
 // (constant per instance, not per server)
 var (
