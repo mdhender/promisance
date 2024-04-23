@@ -2,14 +2,14 @@
     Generates HTML for pages accessed while not logged in.
     No menubar/banner in the header; include a "Return to Login" link in the footer.
  -->
-{{define "layout"}}{{- /*gotype:github.com/mdhender/promisance/app.CompactLayoutTemplateData*/ -}}<!DOCTYPE html>
-<html lang="{{.LANG_CODE}}" {{with .LANG_DIR}}dir="{{.}}"{{end}}>
+{{define "layout"}}{{- /*gotype:github.com/mdhender/promisance/app.CompactLayoutPayload*/ -}}<!DOCTYPE html>
+<html lang="{{.Header.LANG_CODE}}" {{with .Header.LANG_DIR}}dir="{{.}}"{{end}}>
 <head>
     <meta charset="UTF-8">
-    <title>{{.Title}}</title>
-    <link rel="stylesheet" type="text/css" href="/css/{{.GetStyles}}"/>
-    {{range .AddStyles}}{{.}}{{end}}
-    {{range .AddScripts}}{{.}}{{end}}
+    <title>{{.Header.Title}}</title>
+    <link rel="stylesheet" type="text/css" href="/css/{{.Header.GetStyles}}"/>
+    {{range .Header.AddStyles}}{{.}}{{end}}
+    {{range .Header.AddScripts}}{{.}}{{end}}
 </head>
 <body>
 <hr/>
@@ -17,10 +17,10 @@
 {{template "content" .Content }}
 <br/>
 <hr/>
-{{.HTML_FOOTER}}
-{{if not (eq .Page "credits")}}<br/><a href="/index.php?location=credits">{{.HTML_LINK_CREDITS}}</a>{{end}}
-{{if not (eq .Page "login")}}<br/><a href="/index.php?location=login">{{.HTML_LINK_LOGIN}}</a>{{end}}
-{{if .DEBUG_FOOTER}}<br/><br/>{{.HTML_DEBUG_FOOTER}}{{end}}
+{{.Footer.HTML_FOOTER}}
+{{if not (eq .Header.Page "credits")}}<br/><a href="/index.php?location=credits">{{.Footer.HTML_LINK_CREDITS}}</a>{{end}}
+{{if not (eq .Header.Page "login")}}<br/><a href="/index.php?location=login">{{.Footer.HTML_LINK_LOGIN}}</a>{{end}}
+{{if .Footer.DEBUG_FOOTER}}<br/><br/>{{.Footer.HTML_DEBUG_FOOTER}}{{end}}
 </div>
 <hr/>
 </body>

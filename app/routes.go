@@ -33,7 +33,7 @@ func (s *server) routes(valid_locations map[string]int) http.Handler {
 		r.Get("/site-map", s.sitemapHandler)
 	})
 
-	// login/logout pages, no authentication required, do no cache
+	// login/logout pages, no authentication required, do not cache
 	router.Group(func(r chi.Router) {
 		r.Use(middleware.Logger)
 		r.Get("/login", s.loginGetHandler)
@@ -257,23 +257,28 @@ func (s *server) landHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
 }
 
-type CompactLayoutTemplateData struct {
-	Page              string // internal name of the page?
-	Title             string
-	StartTime         template.HTML
-	LANG_CODE         string
-	LANG_DIR          string
-	GetStyles         string   // $this->getstyle()
-	AddStyles         []string // $this->addStyles()
-	AddScripts        []string // $this->addScripts()
-	Content           any
+type CompactLayoutPayload struct {
+	Header  CompactHeaderPayload
+	Content any
+	Footer  CompactFooterPayload
+}
+type CompactHeaderPayload struct {
+	Page       string // internal name of the page?
+	Title      string
+	LANG_CODE  string
+	LANG_DIR   string
+	GetStyles  string
+	AddStyles  []string
+	AddScripts []string
+}
+type CompactFooterPayload struct {
 	HTML_FOOTER       template.HTML
 	HTML_LINK_CREDITS string
 	HTML_LINK_LOGIN   string
 	DEBUG_FOOTER      bool
 	HTML_DEBUG_FOOTER template.HTML
 }
-type LoginTemplateData struct {
+type LoginContent struct {
 	GAME_TITLE       template.HTML
 	LOGIN_VERSION    template.HTML
 	LOGIN_DATE_RANGE template.HTML
@@ -307,9 +312,41 @@ func (s *server) loginGetHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%s %s: lgh: deleted cookies\n", r.Method, r.URL)
 	s.sessions.DeleteCookie(w)
 
+	// our response variables
+	var layout CompactLayoutPayload
+	layout.Header = CompactHeaderPayload{
+		Page:      "login",
+		Title:     s.language.Printf("HTML_TITLE", "login"),
+		LANG_CODE: s.language.Printf("LANG_CODE"),
+		LANG_DIR:  s.language.Printf("LANG_DIR"),
+		GetStyles: "qmt.css",
+	}
+	dur, memUsage, peakMemUsage, queryCount := time.Now().Sub(started), 1, 2, 3
+	layout.Footer = CompactFooterPayload{
+		HTML_FOOTER:       s.language.PrintfHTML("HTML_FOOTER", GAME_VERSION),
+		HTML_LINK_CREDITS: s.language.Printf("HTML_LINK_CREDITS"),
+		HTML_LINK_LOGIN:   s.language.Printf("HTML_LINK_LOGIN"),
+		DEBUG_FOOTER:      true,
+		HTML_DEBUG_FOOTER: s.language.PrintfHTML("HTML_DEBUG_FOOTER", dur, memUsage, peakMemUsage, queryCount),
+	}
+	content := LoginContent{
+		GAME_TITLE:       GAME_TITLE,
+		LOGIN_VERSION:    s.language.PrintfHTML("LOGIN_VERSION", GAME_VERSION),
+		LOGIN_DATE_RANGE: s.language.PrintfHTML("LOGIN_DATE_RANGE", s.world.RoundTimeBegin, s.world.RoundTimeEnd),
+		LABEL_USERNAME:   s.language.PrintfHTML("LABEL_USERNAME"),
+		LABEL_PASSWORD:   s.language.PrintfHTML("LABEL_PASSWORD"),
+		LOGIN_SUBMIT:     s.language.Printf("LOGIN_SUBMIT"),
+		LOGIN_TOPEMPIRES: template.HTML(fmt.Sprintf(`<a href="/index.php?location=topempires"><b>%s</b></a><br />`, s.language.Printf("LOGIN_TOPEMPIRES"))),
+		CLAN_ENABLE:      CLAN_ENABLE,
+		LOGIN_TOPCLANS:   template.HTML(fmt.Sprintf(`<a href="/index.php?location=topclans"><b>%s</b></a><br />`, s.language.Printf("LOGIN_TOPCLANS"))),
+		LOGIN_TOPPLAYERS: template.HTML(fmt.Sprintf(`<a href="/index.php?location=topplayers"><b>%s</b></a><br />`, s.language.Printf("LOGIN_TOPPLAYERS"))),
+		LOGIN_HISTORY:    template.HTML(fmt.Sprintf(`<a href="/index.php?location=history"><b>%s</b></a><br />`, s.language.Printf("LOGIN_HISTORY"))),
+		LOGIN_GUIDE:      template.HTML(fmt.Sprintf(`<a href="/index.php?location=guide"><b>%s</b></a><br />`, s.language.Printf("LOGIN_GUIDE"))),
+	}
 	num := 3 // $db->queryCell('SELECT COUNT(*) FROM '. EMPIRE_TABLE .' WHERE u_id != 0');
-	countData := template.HTML(fmt.Sprintf("<b>%03d</b>", num))
+	content.LOGIN_COUNTER = template.HTML(fmt.Sprintf("<b>%03d</b>", num))
 	if COUNTER_TEMPLATE != "" {
+		log.Printf("%s %s: counter template is not implemented\n", r.Method, r.URL)
 		//counter, err := getimagesize(filepath.Join(PROM_BASEDIR, "images", COUNTER_TEMPLATE))
 		//if err != nil {
 		//	log.Printf("%s %s: lgh: error getting image size: %v\n", r.Method, r.URL, err)
@@ -317,41 +354,11 @@ func (s *server) loginGetHandler(w http.ResponseWriter, r *http.Request) {
 		//	countData = fmt.Sprintf(`<img src="?location=count" alt="%s" style="width:%dpx;height:%dpx" />`, countData, counter[0]/10*len(countData), counter[1])
 		//}
 	}
-
-	// our response variables
-	var layout CompactLayoutTemplateData
-	layout.Page = "login"
-	layout.Title = s.language.Printf("HTML_TITLE", "login")
-	layout.StartTime = template.HTML(started.Format(time.RFC850))
-	layout.LANG_CODE = s.language.Printf("LANG_CODE")
-	layout.LANG_DIR = s.language.Printf("LANG_DIR")
-	layout.GetStyles = "qmt.css"
-	layout.HTML_FOOTER = s.language.PrintfHTML("HTML_FOOTER", GAME_VERSION)
-	layout.HTML_LINK_CREDITS = s.language.Printf("HTML_LINK_CREDITS")
-	layout.HTML_LINK_LOGIN = s.language.Printf("HTML_LINK_LOGIN")
-	layout.DEBUG_FOOTER = true
-	dur, memUsage, peakMemUsage, queryCount := time.Now().Sub(started), 1, 2, 3
-	layout.HTML_DEBUG_FOOTER = s.language.PrintfHTML("HTML_DEBUG_FOOTER", dur, memUsage, peakMemUsage, queryCount)
-	var content LoginTemplateData
-	content.GAME_TITLE = template.HTML(GAME_TITLE)
-	content.LOGIN_VERSION = s.language.PrintfHTML("LOGIN_VERSION", GAME_VERSION)
-	content.LOGIN_DATE_RANGE = s.language.PrintfHTML("LOGIN_DATE_RANGE", s.world.RoundTimeBegin, s.world.RoundTimeEnd)
-	content.LOGIN_COUNTER = countData
-	content.Notices = []string{"notice1"}
-	content.LABEL_USERNAME = s.language.PrintfHTML("LABEL_USERNAME")
-	content.LABEL_PASSWORD = s.language.PrintfHTML("LABEL_PASSWORD")
-	content.LOGIN_SUBMIT = s.language.Printf("LOGIN_SUBMIT")
 	if ROUND_SIGNUP && !(SIGNUP_CLOSED_USER && SIGNUP_CLOSED_EMPIRE) {
 		content.SignupStatus = template.HTML(fmt.Sprintf(`<a href="/index.php?location=signup"><b>%s</b></a><br />`, s.language.Printf("LOGIN_SIGNUP")))
 	} else {
 		content.SignupStatus = template.HTML(fmt.Sprintf(`<b>%s</b><br />`, s.language.Printf("LOGIN_SIGNUP_CLOSED")))
 	}
-	content.LOGIN_TOPEMPIRES = template.HTML(fmt.Sprintf(`<a href="/index.php?location=topempires"><b>%s</b></a><br />`, s.language.Printf("LOGIN_TOPEMPIRES")))
-	content.CLAN_ENABLE = CLAN_ENABLE
-	content.LOGIN_TOPCLANS = template.HTML(fmt.Sprintf(`<a href="/index.php?location=topclans"><b>%s</b></a><br />`, s.language.Printf("LOGIN_TOPCLANS")))
-	content.LOGIN_TOPPLAYERS = template.HTML(fmt.Sprintf(`<a href="/index.php?location=topplayers"><b>%s</b></a><br />`, s.language.Printf("LOGIN_TOPPLAYERS")))
-	content.LOGIN_HISTORY = template.HTML(fmt.Sprintf(`<a href="/index.php?location=history"><b>%s</b></a><br />`, s.language.Printf("LOGIN_HISTORY")))
-	content.LOGIN_GUIDE = template.HTML(fmt.Sprintf(`<a href="/index.php?location=guide"><b>%s</b></a><br />`, s.language.Printf("LOGIN_GUIDE")))
 	layout.Content = content
 
 	// render the login page template
@@ -614,6 +621,8 @@ func (s *server) render(w http.ResponseWriter, r *http.Request, payload any, tem
 }
 
 func (s *server) assetsHandler(assetsPath string) http.HandlerFunc {
+	cacheControl := fmt.Sprintf("public, max-age=%d, immutable", 28*24*60*60)
+	log.Printf("server: assets: cache-control %q\n", cacheControl)
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
@@ -634,7 +643,7 @@ func (s *server) assetsHandler(assetsPath string) http.HandlerFunc {
 		// todo: set cache control header to serve file for a month or so
 		// static files in this case need to be cache busted
 		// (usually by appending a hash to the filename)
-		// w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		w.Header().Set("Cache-Control", cacheControl)
 
 		// otherwise, use http.FileServer to serve the asset.
 
