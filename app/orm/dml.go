@@ -5,6 +5,7 @@ package orm
 import (
 	"database/sql"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/mdhender/promisance/app/model"
 	"github.com/mdhender/promisance/app/orm/sqlc"
 	"log"
@@ -279,6 +280,45 @@ func (db *DB) EmpireUpdateFlags(empire *model.Empire_t) error {
 		EFlags: empireFlagsToInt(empire.Flags),
 		EID:    int64(empire.Id),
 	})
+}
+
+func (db *DB) SessionCreate(uid, eid int, ttl time.Duration) (string, error) {
+	_ = db.SessionsPurgeUser(uid)
+	id := uuid.New().String()
+	err := db.db.SessionCreate(db.ctx, sqlc.SessionCreateParams{
+		SessID:        id,
+		SessExpiresAt: time.Now().Add(ttl).UTC(),
+		SessUid:       int64(uid),
+		SessEid:       int64(eid),
+	})
+	if err != nil {
+		return "", err
+	}
+	return id, nil
+}
+
+func (db *DB) SessionFetch(id string) (data struct {
+	UserID   int
+	EmpireID int
+}, err error) {
+	row, err := db.db.SessionFetch(db.ctx, id)
+	if err != nil {
+		return data, err
+	}
+	data.UserID, data.EmpireID = int(row.SessUid), int(row.SessEid)
+	return data, nil
+}
+
+func (db *DB) SessionsPurge() error {
+	return db.db.SessionsPurge(db.ctx)
+}
+
+func (db *DB) SessionsPurgeId(id string) error {
+	return db.db.SessionsPurgeId(db.ctx, id)
+}
+
+func (db *DB) SessionsPurgeUser(uid int) error {
+	return db.db.SessionsPurgeUser(db.ctx, int64(uid))
 }
 
 func (db *DB) UserCreate(userName, email string) (*model.User_t, error) {

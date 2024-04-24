@@ -334,11 +334,12 @@ CREATE INDEX permission_p_expire ON permission (p_expire);
 DROP TABLE IF EXISTS session;
 CREATE TABLE session
 (
-    sess_id   varbinary(64) PRIMARY KEY,
-    sess_time int unsigned NOT NULL DEFAULT 0,
-    sess_data blob         NOT NULL
+    sess_id         TEXT PRIMARY KEY,
+    sess_expires_at TIMESTAMP NOT NULL,
+    sess_uid        INTEGER   NOT NULL,
+    sess_eid        INTEGER   NOT NULL
 );
-CREATE INDEX session_sess_time ON session (sess_time);
+CREATE INDEX session_sess_time ON session (sess_expires_at);
 
 DROP TABLE IF EXISTS turnlog;
 CREATE TABLE turnlog

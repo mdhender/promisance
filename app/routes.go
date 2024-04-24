@@ -25,13 +25,21 @@ import (
 
 func (s *server) routes() http.Handler {
 	r := way.NewRouter()
-	r.Handle("GET", "/index.php", s.indexPhpHandler())
+	r.Handle("GET", "/", s.sessions.Authenticator(s.indexGetHandler))
+	r.Handle("GET", "/home", s.sessions.Authenticator(s.homeGetHandler))
+	r.HandleFunc("GET", "/relogin", s.reloginGetHandler)
+	r.HandleFunc("GET", "/login", s.loginGetHandler)
+	r.HandleFunc("POST", "/login", s.loginPostHandler)
+	r.Handle("GET", "/logout", s.sessions.Authenticator(s.logoutGetHandler))
+	r.Handle("POST", "/logout", s.sessions.Authenticator(s.logoutPostHandler))
+	r.Handle("GET", "/signup", s.sessions.Authenticator(s.signupGetHandler))
+	//r.Handle("GET", "/index.php", s.indexPhpHandler())
 	r.NotFound = s.assetsHandler(s.public)
 	if r != nil {
 		return r
 	}
 
-	if s.sessions == nil {
+	if s.jots == nil {
 		panic("assert(sessions != nil)")
 	}
 
@@ -52,7 +60,7 @@ func (s *server) routes() http.Handler {
 	router.Group(func(r chi.Router) {
 		r.Use(middleware.Logger)
 		r.Get("/login", s.loginGetHandler)
-		r.Post("/login", s.loginPostHandler)
+		r.Post("/login", s.loginPostHandlerOld)
 		r.Get("/logout", s.logoutHandler)
 	})
 
@@ -60,7 +68,7 @@ func (s *server) routes() http.Handler {
 
 	// admin pages, authentication required, do not cache
 	router.Group(func(r chi.Router) {
-		r.Use(middleware.Logger, middleware.NoCache, s.sessions.Authenticator())
+		r.Use(middleware.Logger, middleware.NoCache, s.jots.Authenticator())
 		r.Get("/admin/clans", s.adminClansHandler)
 		r.Get("/admin/empedit", s.adminEmpeditHandler)
 		r.Get("/admin/empires", s.adminEmpiresHandler)
@@ -75,7 +83,7 @@ func (s *server) routes() http.Handler {
 
 	// player pages, authentication required, do not cache
 	router.Group(func(r chi.Router) {
-		r.Use(middleware.Logger, middleware.NoCache, s.sessions.Authenticator())
+		r.Use(middleware.Logger, middleware.NoCache, s.jots.Authenticator())
 		r.Get("/aid", s.aidHandler)
 		r.Get("/bank", s.bankHandler)
 		r.Get("/banner", s.bannerHandler)
@@ -110,11 +118,10 @@ func (s *server) routes() http.Handler {
 		r.Get("/pubmarketsell", s.pubmarketsellHandler)
 		r.Get("/pvtmarketbuy", s.pvtmarketbuyHandler)
 		r.Get("/pvtmarketsell", s.pvtmarketsellHandler)
-		r.Get("/relogin", s.reloginHandler)
 		r.Get("/revalidate", s.revalidateHandler)
 		r.Get("/scores", s.scoresHandler)
 		r.Get("/search", s.searchHandler)
-		r.Get("/signup", s.signupHandler)
+		r.Get("/signup", s.signupGetHandler)
 		r.Get("/status", s.statusHandler)
 		r.Get("/topclans", s.topclansHandler)
 		r.Get("/topempires", s.topempiresHandler)
@@ -125,6 +132,70 @@ func (s *server) routes() http.Handler {
 	router.NotFound(s.assetsHandler(s.public))
 
 	return router
+}
+
+// indexGetHandler is the "home page" for the application.
+// It pulls the session from the request and uses it to redirect the client to another page.
+// If there is no session, the "home page" is displayed using the site's default language.
+// If the session is invalid, redirect to the "/relogin" page
+// (which will destroy the session and redirect to the "/login" page).
+// If the session is expired, redirect to the "/login" page.
+// If the session has no empire, redirect to the "/signup" page.
+// Otherwise, redirect to the "/game/{empireId}" page.
+func (s *server) indexGetHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("%s %s: entered\n", r.Method, r.URL.Path)
+	sess := s.sessions.Session(r.Context())
+	log.Printf("%s %s: session %p\n", r.Method, r.URL.Path, sess)
+	log.Printf("%s %s: session %+v\n", r.Method, r.URL.Path, *sess)
+	if sess.IsInvalid() {
+		log.Printf("%s %s: session invalid => /relogin\n", r.Method, r.URL.Path)
+		http.Redirect(w, r, "/relogin", http.StatusSeeOther)
+		return
+	} else if sess.IsExpired() {
+		log.Printf("%s %s: session expired => /login\n", r.Method, r.URL.Path)
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	} else if sess.IsValid() {
+		if sess.empireId == 0 {
+			log.Printf("%s %s: session empire 0 => /signup\n", r.Method, r.URL.Path)
+			http.Redirect(w, r, "/signup", http.StatusSeeOther)
+			return
+		}
+		log.Printf("%s %s: session empire %d => /signup\n", r.Method, r.URL.Path, sess.empireId)
+		http.Redirect(w, r, fmt.Sprintf("/game/%d", sess.empireId), http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/home", http.StatusSeeOther)
+}
+
+// homeGetHandler is the "home page" for the application.
+func (s *server) homeGetHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("%s %s: entered\n", r.Method, r.URL.Path)
+	sess := s.sessions.Session(r.Context())
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Home</title><link rel="stylesheet" href="https://unpkg.com/missing.css@1.1.1"></head><body>`))
+	_, _ = w.Write([]byte(`<h1>Home</h1>`))
+	_, _ = w.Write([]byte(`<main>`))
+	_, _ = w.Write([]byte(`<p>Insert home page here</p>`))
+	_, _ = w.Write([]byte(`<ol>`))
+	_, _ = w.Write([]byte(`<li><a href="/">Index</a></li>`))
+	_, _ = w.Write([]byte(`<li><a href="/home">Home</a></li>`))
+	_, _ = w.Write([]byte(`<li><a href="/login">Login</a></li>`))
+	_, _ = w.Write([]byte(`<li><a href="/relogin">Relogin</a></li>`))
+	_, _ = w.Write([]byte(`<li><a href="/logout">Logout</a></li>`))
+	if sess.IsValid() && sess.empireId != 0 {
+		_, _ = w.Write([]byte(fmt.Sprintf(`<li><a href="/game/%d">Game %d</a></li>`, sess.empireId, sess.empireId)))
+	}
+	_, _ = w.Write([]byte(`<li><a href="/signup">Sign Up</a></li>`))
+	_, _ = w.Write([]byte(`</ol>`))
+	if sess.IsValid() {
+		_, _ = w.Write([]byte(`<footer>`))
+		_, _ = w.Write([]byte(fmt.Sprintf(`<p>session %s -- %v</p>`, sess.id, time.Now().Sub(sess.started))))
+		_, _ = w.Write([]byte(`</footer>`))
+	}
+	_, _ = w.Write([]byte(`</main>`))
+	_, _ = w.Write([]byte(`</body>`))
 }
 
 func (s *server) handleNotAuthorized() http.HandlerFunc {
@@ -415,7 +486,7 @@ func (s *server) indexPhpHandler() http.HandlerFunc {
 		}
 
 		// logic to set user1, language, and emp1 pulled from checkAuth()
-		sUser := s.sessions.User(r)
+		sUser := s.jots.User(r)
 		var err error
 		if sUser.IsAuthenticated() {
 			sv.User, err = s.db.UserFetch(sUser.UserId)
@@ -602,7 +673,7 @@ func (s *server) getCompactFooter(started time.Time) *CompactFooterPayload {
 }
 
 func (s *server) logoutHandler(w http.ResponseWriter, r *http.Request) {
-	s.sessions.Destroy(w)
+	s.jots.Destroy(w)
 	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
 }
 func (s *server) lotteryHandler(w http.ResponseWriter, r *http.Request) {
@@ -650,9 +721,7 @@ func (s *server) pvtmarketbuyHandler(w http.ResponseWriter, r *http.Request) {
 func (s *server) pvtmarketsellHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
 }
-func (s *server) reloginHandler(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
-}
+
 func (s *server) revalidateHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
 }
@@ -662,9 +731,37 @@ func (s *server) scoresHandler(w http.ResponseWriter, r *http.Request) {
 func (s *server) searchHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
 }
-func (s *server) signupHandler(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
+
+func (s *server) signupGetHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("%s %s: entered\n", r.Method, r.URL.Path)
+	sess := s.sessions.Session(r.Context())
+	log.Printf("%s %s: session %p\n", r.Method, r.URL.Path, sess)
+	log.Printf("%s %s: session %+v\n", r.Method, r.URL.Path, *sess)
+	if sess.IsMissing() || sess.IsInvalid() || sess.IsExpired() {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Signup</title><link rel="stylesheet" href="https://unpkg.com/missing.css@1.1.1"></head><body>`))
+	_, _ = w.Write([]byte(`<h1>Signup</h1>`))
+	_, _ = w.Write([]byte(`<main>`))
+	_, _ = w.Write([]byte(`<p>Insert signup page here</p>`))
+	_, _ = w.Write([]byte(`<ol>`))
+	_, _ = w.Write([]byte(`<li><a href="/">Index</a></li>`))
+	_, _ = w.Write([]byte(`<li><a href="/home">Home</a></li>`))
+	_, _ = w.Write([]byte(`<li><a href="/logout">Logout</a></li>`))
+	_, _ = w.Write([]byte(`</ol>`))
+	if sess.IsValid() {
+		_, _ = w.Write([]byte(`<footer>`))
+		_, _ = w.Write([]byte(fmt.Sprintf(`<p>session %s -- %v</p>`, sess.id, time.Now().Sub(sess.started))))
+		_, _ = w.Write([]byte(`</footer>`))
+	}
+	_, _ = w.Write([]byte(`</main>`))
+	_, _ = w.Write([]byte(`</body>`))
 }
+
 func (s *server) sitemapHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)

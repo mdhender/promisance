@@ -263,9 +263,10 @@ type Permission struct {
 }
 
 type Session struct {
-	SessID   interface{}
-	SessTime interface{}
-	SessData []byte
+	SessID        string
+	SessExpiresAt time.Time
+	SessUid       int64
+	SessEid       int64
 }
 
 type Turnlog struct {

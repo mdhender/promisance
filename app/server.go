@@ -25,9 +25,10 @@ type server struct {
 	db              *orm.DB
 	world           *model.World_t
 	valid_locations map[string]int
-	sessions        *jot.Factory_t
+	jots            *jot.Factory_t
 	authenticator   *authn.Authenticator
 	language        *LanguageManager_t
+	sessions        *sessionStore_t
 }
 
 func (s *server) check_banned_ip(ip string) bool {
@@ -36,7 +37,7 @@ func (s *server) check_banned_ip(ip string) bool {
 }
 
 func (s *server) checkAuth(r *http.Request, relogin bool) string {
-	user := s.sessions.User(r)
+	user := s.jots.User(r)
 
 	if !user.IsAuthenticated() {
 		// user has no session cookie set

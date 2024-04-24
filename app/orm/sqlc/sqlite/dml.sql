@@ -282,3 +282,29 @@ SELECT c_id,
        c_pic
 FROM clan
 WHERE c_id = ?;
+
+-- name: SessionCreate :exec
+INSERT INTO session(sess_id, sess_expires_at, sess_uid, sess_eid)
+VALUES (?, ?, ?, ?);
+
+-- name: SessionFetch :one
+SELECT sess_uid, sess_eid
+FROM session
+WHERE sess_id = ?;
+
+-- name: SessionsPurge :exec
+DELETE
+FROM session
+WHERE sess_expires_at < datetime('now');
+
+-- name: SessionsPurgeId :exec
+DELETE
+FROM session
+WHERE sess_id = ?
+   OR sess_expires_at < datetime('now');
+
+-- name: SessionsPurgeUser :exec
+DELETE
+FROM session
+WHERE sess_uid = ?
+   OR sess_expires_at < datetime('now');

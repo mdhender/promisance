@@ -126,7 +126,7 @@ var serverCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalf("error: jot.NewHS256Signer: %v\n", err)
 		}
-		s.sessions, err = jot.NewFactory("", "", 7*24*time.Hour, fibSigner)
+		s.jots, err = jot.NewFactory("", "", 7*24*time.Hour, fibSigner)
 		if err != nil {
 			log.Fatalf("error: jot.NewFactory: %v\n", err)
 		}
@@ -135,8 +135,6 @@ var serverCmd = &cobra.Command{
 			log.Fatalf("error: NewLanguageManager: %v\n", err)
 		}
 		log.Printf("app: server time zone is %s (logs are UTC)\n", s.tz)
-
-		handler := s.routes()
 
 		dbFile := filepath.Join(serverArgs.data, "promisance.sqlite")
 		log.Printf("server: connecting to database: %s\n", dbFile)
@@ -150,6 +148,10 @@ var serverCmd = &cobra.Command{
 			}
 			log.Printf("server: db closed\n")
 		}()
+
+		s.sessions = NewSessionStore(s.db, 7*24*time.Hour, "en-US")
+
+		handler := s.routes()
 
 		s.authenticator, err = authn.New(s.db)
 		if err != nil {

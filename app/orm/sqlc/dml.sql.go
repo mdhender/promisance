@@ -481,6 +481,81 @@ func (q *Queries) EmpireUpdateFlags(ctx context.Context, arg EmpireUpdateFlagsPa
 	return err
 }
 
+const sessionCreate = `-- name: SessionCreate :exec
+INSERT INTO session(sess_id, sess_expires_at, sess_uid, sess_eid)
+VALUES (?, ?, ?, ?)
+`
+
+type SessionCreateParams struct {
+	SessID        string
+	SessExpiresAt time.Time
+	SessUid       int64
+	SessEid       int64
+}
+
+func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) error {
+	_, err := q.db.ExecContext(ctx, sessionCreate,
+		arg.SessID,
+		arg.SessExpiresAt,
+		arg.SessUid,
+		arg.SessEid,
+	)
+	return err
+}
+
+const sessionFetch = `-- name: SessionFetch :one
+SELECT sess_uid, sess_eid
+FROM session
+WHERE sess_id = ?
+`
+
+type SessionFetchRow struct {
+	SessUid int64
+	SessEid int64
+}
+
+func (q *Queries) SessionFetch(ctx context.Context, sessID string) (SessionFetchRow, error) {
+	row := q.db.QueryRowContext(ctx, sessionFetch, sessID)
+	var i SessionFetchRow
+	err := row.Scan(&i.SessUid, &i.SessEid)
+	return i, err
+}
+
+const sessionsPurge = `-- name: SessionsPurge :exec
+DELETE
+FROM session
+WHERE sess_expires_at < datetime('now')
+`
+
+func (q *Queries) SessionsPurge(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, sessionsPurge)
+	return err
+}
+
+const sessionsPurgeId = `-- name: SessionsPurgeId :exec
+DELETE
+FROM session
+WHERE sess_id = ?
+   OR sess_expires_at < datetime('now')
+`
+
+func (q *Queries) SessionsPurgeId(ctx context.Context, sessID string) error {
+	_, err := q.db.ExecContext(ctx, sessionsPurgeId, sessID)
+	return err
+}
+
+const sessionsPurgeUser = `-- name: SessionsPurgeUser :exec
+DELETE
+FROM session
+WHERE sess_uid = ?
+   OR sess_expires_at < datetime('now')
+`
+
+func (q *Queries) SessionsPurgeUser(ctx context.Context, sessUid int64) error {
+	_, err := q.db.ExecContext(ctx, sessionsPurgeUser, sessUid)
+	return err
+}
+
 const userAccessUpdate = `-- name: UserAccessUpdate :one
 UPDATE users
 SET u_lastip   = ?,
