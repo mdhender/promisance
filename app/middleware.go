@@ -5,7 +5,6 @@ package main
 import (
 	"log"
 	"net/http"
-	"strings"
 )
 
 // check_banned_ip
@@ -56,45 +55,6 @@ func (s *server) turnsCrontab() func(http.Handler) http.Handler {
 	log.Printf("todo: implement turnsCrontab middleware\n")
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-func (s *server) validate_location(rules map[string]int) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			page := strings.TrimPrefix(r.URL.Path, "/")
-			rule, ok := rules[page]
-			if !ok {
-				// no rules to validate for this page
-				log.Printf("middleware: %s %s: error.badpage\n", r.Method, r.URL.Path)
-				next.ServeHTTP(w, r)
-			}
-			log.Printf("middleware: validate_location: page %s: rule %d: referer %q\n", page, rule, r.Referer())
-
-			// pages that work from anywhere
-			switch rule {
-			case 0: // no referer needed
-				// special case - go to "login" page when you still have an active session
-				if page == "relogin" {
-					log.Printf("middleware: %s %s: %d: redirect %s => main\n", r.Method, r.URL.Path, rule, page)
-				}
-			case 1: // need referer
-				if r.Referer() == "" {
-					log.Printf("middleware: %s %s: %d: error.noref\n", r.Method, r.URL.Path, rule)
-				} else if page == "game" {
-					log.Printf("middleware: %s %s: %d: redirect %s => game\n", r.Method, r.URL.Path, rule, page)
-				}
-			case 2: // need in-game referer
-				if r.Referer() == "" {
-					log.Printf("middleware: %s %s: %d: error.noref\n", r.Method, r.URL.Path, rule)
-				} else if !strings.Contains(r.Referer(), URL_BASE) {
-					log.Printf("middleware: %s %s: %d: error.badref\n", r.Method, r.URL.Path, rule)
-				}
-			default:
-				log.Printf("middleware: %s %s: %d: error.badrule\n", r.Method, r.URL.Path, rule)
-			}
 			next.ServeHTTP(w, r)
 		})
 	}

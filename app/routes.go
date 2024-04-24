@@ -5,19 +5,31 @@ package main
 import (
 	"bytes"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/mdhender/promisance/app/cerr"
+	"github.com/mdhender/promisance/app/model"
+	"github.com/mdhender/promisance/app/way"
 	"html/template"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime/debug"
 	"time"
 )
 
-func (s *server) routes(valid_locations map[string]int) http.Handler {
+func (s *server) routes() http.Handler {
+	r := way.NewRouter()
+	r.Handle("GET", "/index.php", s.indexPhpHandler())
+	r.NotFound = s.assetsHandler(s.public)
+	if r != nil {
+		return r
+	}
+
 	if s.sessions == nil {
 		panic("assert(sessions != nil)")
 	}
@@ -30,8 +42,8 @@ func (s *server) routes(valid_locations map[string]int) http.Handler {
 		//r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		//	http.Redirect(w, r, "/site-map", http.StatusTemporaryRedirect)
 		//})
-		r.Get("/", s.indexPhpHandler)
-		r.Get("/index.php", s.indexPhpHandler)
+		r.Get("/", s.indexPhpHandler())
+		r.Get("/index.php", s.indexPhpHandler())
 		r.Get("/site-map", s.sitemapHandler)
 	})
 
@@ -171,22 +183,280 @@ func (s *server) handleSetup() http.HandlerFunc {
 	}
 }
 
-func (s *server) indexPhpHandler(w http.ResponseWriter, r *http.Request) {
-	log.Printf("%s %s: referer %s\n", r.Method, r.URL, r.Referer())
-	location := r.URL.Query().Get("location")
-	if location == "" {
-		log.Printf("%s %s: no location parameter\n", r.Method, r.URL)
-		http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
-		return
+type reqVariables_t struct {
+	User      *model.User_t
+	Empire    *model.Empire_t
+	World     *model.World_t
+	Round     model.RoundData_t
+	Started   time.Time
+	Title     string
+	NeedPriv  model.UserFlag_t
+	Locks     map[string]int
+	Action    string
+	Language  string
+	LogMsg    string
+	Page      string
+	TriedPage string
+}
+
+type reqVariablesContext_t string
+
+func (s *server) indexPhpHandler() http.HandlerFunc {
+	// temporarily save some routing information. we don't use it, but may.
+	// Valid in-game pages - can be specified for 'location' parameter to load corresponding PHP file
+	// Values denote any special requirements for loading the page
+	if s.valid_locations == nil {
+		s.valid_locations = map[string]int{
+			// 0 - does not require referer or session
+			"count":       0, // 0 - does not require referer or session
+			"credits":     0, // 0 - does not require referer or session
+			"history":     0, // 0 - does not require referer or session
+			"login":       0, // 0 - does not require referer or session
+			"pguide":      0, // 0 - does not require referer or session
+			"playerstats": 0, // 0 - does not require referer or session
+			"signup":      0, // 0 - does not require referer or session
+			"topclans":    0, // 0 - does not require referer or session
+			"topempires":  0, // 0 - does not require referer or session
+			"topplayers":  0, // 0 - does not require referer or session
+			"relogin":     0, // redirect from login page load; redirects don't set referer, and this could be a bookmark
+
+			// 1 - requires referer from any site
+			"game": 1, // redirect from login page submission; redirects don't set referer
+
+			// 2 - requires referer from in-game, also requires active session
+			"banner":     2, // 2 - requires referer from in-game, also requires active session
+			"guide":      2, // 2 - requires referer from in-game, also requires active session
+			"messages":   2, // 2 - requires referer from in-game, also requires active session
+			"revalidate": 2, // 2 - requires referer from in-game, also requires active session
+			"validate":   2, // 2 - requires referer from in-game, also requires active session
+			"main":       2, // both "relogin" and "game" redirect to here
+
+			// Information
+			"clanstats": 2, // 2 - requires referer from in-game, also requires active session
+			"contacts":  2, // 2 - requires referer from in-game, also requires active session
+			"graveyard": 2, // 2 - requires referer from in-game, also requires active session
+			"news":      2, // 2 - requires referer from in-game, also requires active session
+			"scores":    2, // 2 - requires referer from in-game, also requires active session
+			"search":    2, // 2 - requires referer from in-game, also requires active session
+			"status":    2, // 2 - requires referer from in-game, also requires active session
+
+			// Use Turns
+			"build":    2, // 2 - requires referer from in-game, also requires active session
+			"cash":     2, // 2 - requires referer from in-game, also requires active session
+			"demolish": 2, // 2 - requires referer from in-game, also requires active session
+			"farm":     2, // 2 - requires referer from in-game, also requires active session
+			"land":     2, // 2 - requires referer from in-game, also requires active session
+
+			// Finances
+			"bank":          2, // 2 - requires referer from in-game, also requires active session
+			"lottery":       2, // 2 - requires referer from in-game, also requires active session
+			"pubmarketbuy":  2, // 2 - requires referer from in-game, also requires active session
+			"pubmarketsell": 2, // 2 - requires referer from in-game, also requires active session
+			"pvtmarketbuy":  2, // 2 - requires referer from in-game, also requires active session
+			"pvtmarketsell": 2, // 2 - requires referer from in-game, also requires active session
+
+			// Foreign Affairs
+			"aid":       2, // 2 - requires referer from in-game, also requires active session
+			"clan":      2, // 2 - requires referer from in-game, also requires active session
+			"clanforum": 2, // 2 - requires referer from in-game, also requires active session
+			"magic":     2, // 2 - requires referer from in-game, also requires active session
+			"military":  2, // 2 - requires referer from in-game, also requires active session
+
+			// Management
+			"delete":        2, // 2 - requires referer from in-game, also requires active session
+			"manage/clan":   2, // 2 - requires referer from in-game, also requires active session
+			"manage/empire": 2, // 2 - requires referer from in-game, also requires active session
+			"manage/user":   2, // 2 - requires referer from in-game, also requires active session
+
+			// Administration
+			"admin/clans":       2, // 2 - requires referer from in-game, also requires active session
+			"admin/empedit":     2, // 2 - requires referer from in-game, also requires active session
+			"admin/empires":     2, // 2 - requires referer from in-game, also requires active session
+			"admin/history":     2, // 2 - requires referer from in-game, also requires active session
+			"admin/log":         2, // 2 - requires referer from in-game, also requires active session
+			"admin/market":      2, // 2 - requires referer from in-game, also requires active session
+			"admin/messages":    2, // 2 - requires referer from in-game, also requires active session
+			"admin/permissions": 2, // 2 - requires referer from in-game, also requires active session
+			"admin/round":       2, // 2 - requires referer from in-game, also requires active session
+			"admin/users":       2, // 2 - requires referer from in-game, also requires active session
+
+			// Logout
+			"logout": 2, // 2 - requires referer from in-game, also requires active session
+		}
+		log.Printf("todo: implement valid_locations referer logic (%d pages)\n", len(s.valid_locations))
 	}
-	log.Printf("%s %s: location %q\n", r.Method, r.URL, location)
-	scheme := "http"
-	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
-		scheme = "https"
+
+	showTurnsCrontabError := true
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%s %s: entered\n", r.Method, r.URL)
+
+		rv := &reqVariables_t{
+			Started: time.Now(),
+		}
+
+		if s.db == nil {
+			log.Printf("%s %s: ERROR_TITLE %s\n", r.Method, r.URL, s.language.Printf("ERROR_TITLE"))
+			log.Printf("%s %s: ERROR_DATABASE_OFFLINE %s\n", r.Method, r.URL, s.language.Printf("ERROR_DATABASE_OFFLINE"))
+			http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
+			return
+		}
+		// load world variables
+		if s.world == nil {
+			log.Printf("%s %s: world not initialized\n", r.Method, r.URL)
+			http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
+			return
+		}
+		// If we're configured for cron-less turn updates, check them now
+		// turns := fetchSomeTurnData()
+		if !TURNS_CRONTAB {
+			if showTurnsCrontabError {
+				log.Printf("%s %s: turns crontab is not implemented\n", r.Method, r.URL)
+				showTurnsCrontabError = false
+			}
+			// turns.doUpdate()
+		}
+
+		// define constants based on round start/end times
+		if rv.Started.Before(s.world.RoundTimeBegin) { // pre-registration
+			rv.Round.Signup = true
+			rv.Round.Started = false
+			rv.Round.Closing = false
+			rv.Round.Finished = false
+			rv.Round.TimeNotice = s.language.Printf("ROUND_WILL_BEGIN", "ROUND_WILL_BEGIN_FORMAT", s.world.RoundTimeBegin.Sub(rv.Started))
+		} else if rv.Started.Before(s.world.RoundTimeClosing) { // normal gameplay
+			rv.Round.Signup = true
+			rv.Round.Started = true
+			rv.Round.Closing = false
+			rv.Round.Finished = false
+		} else if rv.Started.Before(s.world.RoundTimeEnd) { // final week (or so)
+			rv.Round.Signup = false
+			rv.Round.Started = true
+			rv.Round.Closing = true
+			rv.Round.Finished = false
+			rv.Round.TimeNotice = s.language.Printf("ROUND_WILL_END", "ROUND_WILL_BEGIN_FORMAT", s.world.RoundTimeEnd.Sub(rv.Started))
+		} else { // end of round
+			rv.Round.Signup = false
+			rv.Round.Started = false
+			rv.Round.Closing = false
+			rv.Round.Finished = true
+			rv.Round.TimeNotice = s.language.Printf("ROUND_HAS_ENDED")
+		}
+		// todo: inject round data into request context
+
+		if s.check_banned_ip("ip.address") {
+			log.Printf("%s %s: implement banned ip address logic\n", r.Method, r.URL)
+			// $ban_message = lang('YOU_ARE_BANNED', gmdate(lang('COMMON_TIME_FORMAT'), $ban['p_createtime']), ($ban['p_reason']) ? $ban['p_reason'] : lang('BANNED_NO_REASON'), ($ban['p_expire'] == 0) ? lang('BANNED_PERMANENT') : lang('BANNED_EXPIRES', gmdate(lang('COMMON_TIME_FORMAT'), $ban['p_expire'])), MAIL_ADMIN);
+			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+			return
+		}
+
+		// Special variables parsed by page_header()
+		// Page title ("Promisance - whatever")
+
+		// Set to combination of UFLAG_MOD/UFLAG_ADMIN to indicate USER privileges required to load page
+		// var needpriv model.UserFlag_t
+
+		// Add entries to this array to request entities to be loaded and locked.
+		rv.Locks = map[string]int{"emp1": 0, "emp2": 0, "user1": 0, "user2": 0, "clan1": 0, "clan2": 0, "world": 0}
+		// Set to an entity number, or use -1 (for non-empires) to determine the ID automatically from the loaded empire
+		// If loading an entity fails, its value will be reset to 0
+		// Setting 'emp1' has no effect - it exists for logging purposes and is automatically set to the current empire ID
+		// Setting 'user1' or 'world' to anything other than -1 has no effect - they only allow auto-detection.
+		// Additional locks (for special purposes) can be requested directly from $db
+
+		rv.TriedPage, _ = s.getFormVar(r, "location", "login")
+		var errchk error
+		rv.Page, errchk = s.validate_location(r, rv.TriedPage)
+		rv.Action, _ = s.getFormVar(r, "action", "")
+
+		// if they tried entering a really, really long action, truncate it and log a warning
+		if len(rv.Action) > 64 {
+			s.logmsg(E_USER_NOTICE, "action overflowed: "+rv.Action)
+			rv.Action = rv.Action[:64]
+		}
+
+		if errchk != nil {
+			message := "<table><tr><th>" + s.language.Printf("SECURITY_TITLE") + "</th></tr><tr><td>" + s.language.Printf("SECURITY_DESC") + "<br />"
+			error_args := []string{"triedpage", "action"}
+			rv.LogMsg = rv.TriedPage
+			if errors.Is(errchk, cerr.ErrBadPage) {
+				message += s.language.Printf("SECURITY_BADPAGE", url.QueryEscape(rv.TriedPage)) + "<br />"
+			} else if errors.Is(errchk, cerr.ErrBadReferrer) {
+				referer := r.Referer()
+				message += s.language.Printf("SECURITY_BADREF", url.QueryEscape(rv.TriedPage)+url.QueryEscape(referer)+s.baseURL) + "<br />"
+				error_args = append(error_args, "referer")
+			} else if errors.Is(errchk, cerr.ErrMissingReferrer) {
+				message += s.language.Printf("SECURITY_NOREF", url.QueryEscape(rv.TriedPage)) + "<br />"
+			} else {
+				message += s.language.Printf("SECURITY_UNKNOWN", url.QueryEscape(rv.TriedPage), errchk) + "<br />"
+			}
+			message += s.language.Printf("SECURITY_INSTRUCT", s.baseURL, MAIL_ADMIN) + "</td></tr></table>"
+			s.logmsg(E_USER_ERROR, "varlist($error_args, get_defined_vars())")
+
+			if errors.Is(errchk, cerr.ErrBadPage) {
+				http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+				return
+			} else {
+				http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+				return
+			}
+		}
+
+		// check if destination page requires an active session
+		if s.valid_locations[rv.Page] == 2 {
+			// prevent logout page from suggesting to log back in again
+			auth := s.checkAuth(r, rv.Page != "logout")
+			if auth != "" {
+				http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+				return
+			}
+		}
+
+		// logic to set user1, language, and emp1 pulled from checkAuth()
+		sUser := s.sessions.User(r)
+		var err error
+		if sUser.IsAuthenticated() {
+			rv.User, err = s.db.UserFetch(sUser.UserId)
+			if err != nil {
+				log.Printf("%s %s: userFetch %v\n", r.Method, r.URL, err)
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+			rv.Language = rv.User.Lang
+			rv.Empire, err = s.db.EmpireFetch(sUser.EmpireId)
+			if err != nil {
+				log.Printf("%s %s: empireFetch %v\n", r.Method, r.URL, err)
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		// finally, finally, finally...
+		// dispatch to the page handler
+		switch rv.Page {
+
+		default:
+			log.Printf("%s %s: page %s: not implemented\n", r.Method, r.URL, rv.Page)
+			http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
+			return
+		}
+
+		//location := r.URL.Query().Get("location")
+		//if location == "" {
+		//	log.Printf("%s %s: no location parameter\n", r.Method, r.URL)
+		//	http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
+		//	return
+		//}
+		//log.Printf("%s %s: location %q\n", r.Method, r.URL, location)
+		//scheme := "http"
+		//if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
+		//	scheme = "https"
+		//}
+		//locationURL := fmt.Sprintf("%s://%s/%s", scheme, r.Host, location)
+		//log.Printf("%s %s: redirecting to %s\n", r.Method, r.URL, locationURL)
+		//http.Redirect(w, r, locationURL, http.StatusSeeOther)
 	}
-	locationURL := fmt.Sprintf("%s://%s/%s", scheme, r.Host, location)
-	log.Printf("%s %s: redirecting to %s\n", r.Method, r.URL, locationURL)
-	http.Redirect(w, r, locationURL, http.StatusSeeOther)
 }
 
 func (s *server) adminClansHandler(w http.ResponseWriter, r *http.Request) {

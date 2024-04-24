@@ -324,6 +324,147 @@ func (q *Queries) EmpireCreate(ctx context.Context, arg EmpireCreateParams) (int
 	return e_id, err
 }
 
+const empireFetch = `-- name: EmpireFetch :one
+SELECT e_id,
+       u_id,
+       u_oldid,
+       e_signupdate,
+       e_flags,
+       e_valcode,
+       e_reason,
+       e_vacation,
+       e_idle,
+       e_name,
+       e_race,
+       e_era,
+       e_rank,
+       c_id,
+       c_oldid,
+       e_sharing,
+       e_attacks,
+       e_offsucc,
+       e_offtotal,
+       e_defsucc,
+       e_deftotal,
+       e_kills,
+       e_score,
+       e_killedby,
+       e_killclan,
+       e_turns,
+       e_storedturns,
+       e_turnsused,
+       e_networth,
+       e_cash,
+       e_food,
+       e_peasants,
+       e_trparm,
+       e_trplnd,
+       e_trpfly,
+       e_trpsea,
+       e_trpwiz,
+       e_health,
+       e_runes,
+       e_indarm,
+       e_indlnd,
+       e_indfly,
+       e_indsea,
+       e_land,
+       e_bldpop,
+       e_bldcash,
+       e_bldtrp,
+       e_bldcost,
+       e_bldwiz,
+       e_bldfood,
+       e_blddef,
+       e_freeland,
+       e_tax,
+       e_bank,
+       e_loan,
+       e_mktarm,
+       e_mktlnd,
+       e_mktfly,
+       e_mktsea,
+       e_mktfood,
+       e_mktperarm,
+       e_mktperlnd,
+       e_mktperfly,
+       e_mktpersea
+FROM empire
+WHERE e_id = ?
+`
+
+func (q *Queries) EmpireFetch(ctx context.Context, eID int64) (Empire, error) {
+	row := q.db.QueryRowContext(ctx, empireFetch, eID)
+	var i Empire
+	err := row.Scan(
+		&i.EID,
+		&i.UID,
+		&i.UOldid,
+		&i.ESignupdate,
+		&i.EFlags,
+		&i.EValcode,
+		&i.EReason,
+		&i.EVacation,
+		&i.EIdle,
+		&i.EName,
+		&i.ERace,
+		&i.EEra,
+		&i.ERank,
+		&i.CID,
+		&i.COldid,
+		&i.ESharing,
+		&i.EAttacks,
+		&i.EOffsucc,
+		&i.EOfftotal,
+		&i.EDefsucc,
+		&i.EDeftotal,
+		&i.EKills,
+		&i.EScore,
+		&i.EKilledby,
+		&i.EKillclan,
+		&i.ETurns,
+		&i.EStoredturns,
+		&i.ETurnsused,
+		&i.ENetworth,
+		&i.ECash,
+		&i.EFood,
+		&i.EPeasants,
+		&i.ETrparm,
+		&i.ETrplnd,
+		&i.ETrpfly,
+		&i.ETrpsea,
+		&i.ETrpwiz,
+		&i.EHealth,
+		&i.ERunes,
+		&i.EIndarm,
+		&i.EIndlnd,
+		&i.EIndfly,
+		&i.EIndsea,
+		&i.ELand,
+		&i.EBldpop,
+		&i.EBldcash,
+		&i.EBldtrp,
+		&i.EBldcost,
+		&i.EBldwiz,
+		&i.EBldfood,
+		&i.EBlddef,
+		&i.EFreeland,
+		&i.ETax,
+		&i.EBank,
+		&i.ELoan,
+		&i.EMktarm,
+		&i.EMktlnd,
+		&i.EMktfly,
+		&i.EMktsea,
+		&i.EMktfood,
+		&i.EMktperarm,
+		&i.EMktperlnd,
+		&i.EMktperfly,
+		&i.EMktpersea,
+	)
+	return i, err
+}
+
 const empireUpdateFlags = `-- name: EmpireUpdateFlags :exec
 UPDATE empire
 SET e_flags = ?
@@ -502,26 +643,62 @@ func (q *Queries) UserCreate(ctx context.Context, arg UserCreateParams) (UserCre
 }
 
 const userFetch = `-- name: UserFetch :one
-SELECT u_username, u_flags, u_comment, u_timezone
+SELECT u_id,
+       u_username,
+       u_password,
+       u_flags,
+       u_name,
+       u_email,
+       u_comment,
+       u_timezone,
+       u_style,
+       u_lang,
+       u_dateformat,
+       u_lastip,
+       u_kills,
+       u_deaths,
+       u_offsucc,
+       u_offtotal,
+       u_defsucc,
+       u_deftotal,
+       u_numplays,
+       u_sucplays,
+       u_avgrank,
+       u_bestrank,
+       u_createdate,
+       u_lastdate
 FROM users
 WHERE u_id = ?
 `
 
-type UserFetchRow struct {
-	UUsername string
-	UFlags    sql.NullInt64
-	UComment  sql.NullString
-	UTimezone sql.NullInt64
-}
-
-func (q *Queries) UserFetch(ctx context.Context, uID int64) (UserFetchRow, error) {
+func (q *Queries) UserFetch(ctx context.Context, uID int64) (User, error) {
 	row := q.db.QueryRowContext(ctx, userFetch, uID)
-	var i UserFetchRow
+	var i User
 	err := row.Scan(
+		&i.UID,
 		&i.UUsername,
+		&i.UPassword,
 		&i.UFlags,
+		&i.UName,
+		&i.UEmail,
 		&i.UComment,
 		&i.UTimezone,
+		&i.UStyle,
+		&i.ULang,
+		&i.UDateformat,
+		&i.ULastip,
+		&i.UKills,
+		&i.UDeaths,
+		&i.UOffsucc,
+		&i.UOfftotal,
+		&i.UDefsucc,
+		&i.UDeftotal,
+		&i.UNumplays,
+		&i.USucplays,
+		&i.UAvgrank,
+		&i.UBestrank,
+		&i.UCreatedate,
+		&i.ULastdate,
 	)
 	return i, err
 }

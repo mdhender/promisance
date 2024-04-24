@@ -96,6 +96,14 @@ type EmpireFlag_t struct {
 	Logged bool
 }
 
+type RoundData_t struct {
+	Signup     bool
+	Started    bool
+	Closing    bool
+	Finished   bool
+	TimeNotice string
+}
+
 type User_t struct {
 	Id         int
 	UserName   string
@@ -104,9 +112,21 @@ type User_t struct {
 	Nickname   string
 	Email      string
 	Comment    string
+	TimeZone   int
+	Style      string
 	Lang       string
 	DateFormat string
 	LastIP     string
+	Kills      int
+	Deaths     int
+	OffSucc    int
+	OffTotal   int
+	DefSucc    int
+	DefTotal   int
+	NumPlays   int
+	SucPlays   int
+	AvgRank    float64
+	Bestrank   float64
 	CreateDate time.Time
 	LastDate   time.Time
 }

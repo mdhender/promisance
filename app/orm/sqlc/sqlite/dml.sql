@@ -18,7 +18,30 @@ WHERE u_email = ?
   AND u_password = ?;
 
 -- name: UserFetch :one
-SELECT u_username, u_flags, u_comment, u_timezone
+SELECT u_id,
+       u_username,
+       u_password,
+       u_flags,
+       u_name,
+       u_email,
+       u_comment,
+       u_timezone,
+       u_style,
+       u_lang,
+       u_dateformat,
+       u_lastip,
+       u_kills,
+       u_deaths,
+       u_offsucc,
+       u_offtotal,
+       u_defsucc,
+       u_deftotal,
+       u_numplays,
+       u_sucplays,
+       u_avgrank,
+       u_bestrank,
+       u_createdate,
+       u_lastdate
 FROM users
 WHERE u_id = ?;
 
@@ -111,6 +134,74 @@ FROM empire
 WHERE u_id = ?
   AND e_flags & ? = 0
 ORDER BY e_id;
+
+-- name: EmpireFetch :one
+SELECT e_id,
+       u_id,
+       u_oldid,
+       e_signupdate,
+       e_flags,
+       e_valcode,
+       e_reason,
+       e_vacation,
+       e_idle,
+       e_name,
+       e_race,
+       e_era,
+       e_rank,
+       c_id,
+       c_oldid,
+       e_sharing,
+       e_attacks,
+       e_offsucc,
+       e_offtotal,
+       e_defsucc,
+       e_deftotal,
+       e_kills,
+       e_score,
+       e_killedby,
+       e_killclan,
+       e_turns,
+       e_storedturns,
+       e_turnsused,
+       e_networth,
+       e_cash,
+       e_food,
+       e_peasants,
+       e_trparm,
+       e_trplnd,
+       e_trpfly,
+       e_trpsea,
+       e_trpwiz,
+       e_health,
+       e_runes,
+       e_indarm,
+       e_indlnd,
+       e_indfly,
+       e_indsea,
+       e_land,
+       e_bldpop,
+       e_bldcash,
+       e_bldtrp,
+       e_bldcost,
+       e_bldwiz,
+       e_bldfood,
+       e_blddef,
+       e_freeland,
+       e_tax,
+       e_bank,
+       e_loan,
+       e_mktarm,
+       e_mktlnd,
+       e_mktfly,
+       e_mktsea,
+       e_mktfood,
+       e_mktperarm,
+       e_mktperlnd,
+       e_mktperfly,
+       e_mktpersea
+FROM empire
+WHERE e_id = ?;
 
 -- name: EmpireAttributesUpdate :exec
 UPDATE empire

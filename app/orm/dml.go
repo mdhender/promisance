@@ -9,6 +9,7 @@ import (
 	"github.com/mdhender/promisance/app/orm/sqlc"
 	"log"
 	"strings"
+	"time"
 )
 
 const (
@@ -138,41 +139,9 @@ func (db *DB) EmpireCreate(user *model.User_t, name string, race string) (*model
 }
 
 func (db *DB) EmpireAttributesUpdate(empire *model.Empire_t) error {
-	var flags int64
-	if empire.Flags.Admin {
-		flags |= EFLAG_ADMIN
-	}
-	if empire.Flags.Delete {
-		flags |= EFLAG_DELETE
-	}
-	if empire.Flags.Disable {
-		flags |= EFLAG_DISABLE
-	}
-	if empire.Flags.Logged {
-		flags |= EFLAG_LOGGED
-	}
-	if empire.Flags.Mod {
-		flags |= EFLAG_MOD
-	}
-	if empire.Flags.Multi {
-		flags |= EFLAG_MULTI
-	}
-	if empire.Flags.Notify {
-		flags |= EFLAG_NOTIFY
-	}
-	if empire.Flags.Online {
-		flags |= EFLAG_ONLINE
-	}
-	if empire.Flags.Silent {
-		flags |= EFLAG_SILENT
-	}
-	if empire.Flags.Valid {
-		flags |= EFLAG_VALID
-	}
-
 	parms := sqlc.EmpireAttributesUpdateParams{
 		EID:          int64(empire.Id),
-		EFlags:       sql.NullInt64{Valid: true, Int64: flags},
+		EFlags:       empireFlagsToInt(empire.Flags),
 		EValcode:     sql.NullString{Valid: true, String: empire.ValCode},
 		EReason:      sql.NullString{Valid: true, String: empire.Reason},
 		EVacation:    sql.NullInt64{Valid: true, Int64: int64(empire.Vacation)},
@@ -230,6 +199,79 @@ func (db *DB) EmpireAttributesUpdate(empire *model.Empire_t) error {
 		EMktpersea:   sql.NullInt64{Valid: true, Int64: int64(empire.MktPerSea)},
 	}
 	return db.db.EmpireAttributesUpdate(db.ctx, parms)
+}
+
+func (db *DB) EmpireFetch(id int) (*model.Empire_t, error) {
+	row, err := db.db.EmpireFetch(db.ctx, int64(id))
+	if err != nil {
+		return nil, err
+	}
+	return &model.Empire_t{
+		Id:          int(row.EID),
+		UserId:      int(row.UID),
+		OldUserId:   nvlInt(row.UOldid),
+		SignupDate:  nvlTime(row.ESignupdate),
+		Flags:       intToEmpireFlags(row.EFlags),
+		ValCode:     nvlString(row.EValcode),
+		Reason:      nvlString(row.EReason),
+		Vacation:    nvlInt(row.EVacation),
+		Idle:        nvlInt(row.EIdle),
+		Name:        row.EName,
+		Race:        int(row.ERace),
+		Era:         nvlInt(row.EEra),
+		Rank:        nvlInt(row.ERank),
+		CId:         nvlInt(row.CID),
+		OldCId:      nvlInt(row.COldid),
+		Sharing:     nvlInt(row.ESharing),
+		Attacks:     nvlInt(row.EAttacks),
+		OffSucc:     nvlInt(row.EOffsucc),
+		OffTotal:    nvlInt(row.EOfftotal),
+		DefSucc:     nvlInt(row.EDefsucc),
+		DefTotal:    nvlInt(row.EDeftotal),
+		Kills:       nvlInt(row.EKills),
+		Score:       nvlInt(row.EScore),
+		KilledBy:    nvlInt(row.EKilledby),
+		KillClan:    nvlInt(row.EKillclan),
+		Turns:       nvlInt(row.ETurns),
+		StoredTurns: nvlInt(row.EStoredturns),
+		TurnsUsed:   nvlInt(row.ETurnsused),
+		NetWorth:    nvlInt(row.ENetworth),
+		Cash:        nvlInt(row.ECash),
+		Food:        nvlInt(row.EFood),
+		Peasants:    nvlInt(row.EPeasants),
+		TrpArm:      nvlInt(row.ETrparm),
+		TrpLnd:      nvlInt(row.ETrplnd),
+		TrpFly:      nvlInt(row.ETrpfly),
+		TrpSea:      nvlInt(row.ETrpsea),
+		TrpWiz:      nvlInt(row.ETrpwiz),
+		Health:      nvlInt(row.EHealth),
+		Runes:       nvlInt(row.ERunes),
+		IndArm:      nvlInt(row.EIndarm),
+		IndLnd:      nvlInt(row.EIndlnd),
+		IndFly:      nvlInt(row.EIndfly),
+		IndSea:      nvlInt(row.EIndsea),
+		Land:        nvlInt(row.ELand),
+		BldPop:      nvlInt(row.EBldpop),
+		BldCash:     nvlInt(row.EBldcash),
+		BldTrp:      nvlInt(row.EBldtrp),
+		BldCost:     nvlInt(row.EBldcost),
+		BldWiz:      nvlInt(row.EBldwiz),
+		BldFood:     nvlInt(row.EBldfood),
+		BldDef:      nvlInt(row.EBlddef),
+		Freeland:    nvlInt(row.EFreeland),
+		Tax:         nvlInt(row.ETax),
+		Bank:        nvlInt(row.EBank),
+		Loan:        nvlInt(row.ELoan),
+		MktArm:      nvlInt(row.EMktarm),
+		MktLnd:      nvlInt(row.EMktlnd),
+		MktFly:      nvlInt(row.EMktfly),
+		MktSea:      nvlInt(row.EMktsea),
+		MktFood:     nvlInt(row.EMktfood),
+		MktPerArm:   nvlInt(row.EMktperarm),
+		MktPerLnd:   nvlInt(row.EMktperlnd),
+		MktPerFly:   nvlInt(row.EMktperfly),
+		MktPerSea:   nvlInt(row.EMktpersea),
+	}, nil
 }
 
 func (db *DB) EmpireUpdateFlags(empire *model.Empire_t) error {
@@ -355,6 +397,39 @@ func (db *DB) UserAttributesUpdate(user *model.User_t) error {
 	}
 
 	return nil
+}
+
+func (db *DB) UserFetch(id int) (*model.User_t, error) {
+	row, err := db.db.UserFetch(db.ctx, int64(id))
+	if err != nil {
+		return nil, err
+	}
+	user := &model.User_t{
+		Id:         int(row.UID),
+		UserName:   row.UUsername,
+		Flags:      intToUserFlags(row.UFlags),
+		Nickname:   nvlString(row.UName),
+		Email:      row.UEmail,
+		Comment:    nvlString(row.UComment),
+		TimeZone:   nvlInt(row.UTimezone),
+		Style:      nvlString(row.UStyle),
+		Lang:       nvlString(row.ULang),
+		DateFormat: nvlString(row.UDateformat),
+		LastIP:     nvlString(row.ULastip),
+		Kills:      nvlInt(row.UKills),
+		Deaths:     nvlInt(row.UDeaths),
+		OffSucc:    nvlInt(row.UOffsucc),
+		OffTotal:   nvlInt(row.UOfftotal),
+		DefSucc:    nvlInt(row.UDefsucc),
+		DefTotal:   nvlInt(row.UDeftotal),
+		NumPlays:   nvlInt(row.UNumplays),
+		SucPlays:   nvlInt(row.USucplays),
+		AvgRank:    nvlFloat(row.UAvgrank),
+		Bestrank:   nvlFloat(row.UBestrank),
+		CreateDate: nvlTime(row.UCreatedate),
+		LastDate:   nvlTime(row.ULastdate),
+	}
+	return user, nil
 }
 
 func (db *DB) UserPasswordUpdate(user *model.User_t) error {
@@ -527,4 +602,32 @@ func intToUserFlags(flags sql.NullInt64) model.UserFlag_t {
 		Valid:    (bits & UFLAG_VALID) != 0,
 		Watch:    (bits & UFLAG_WATCH) != 0,
 	}
+}
+
+func nvlFloat(v sql.NullFloat64) float64 {
+	if !v.Valid {
+		return 0
+	}
+	return v.Float64
+}
+
+func nvlInt(v sql.NullInt64) int {
+	if !v.Valid {
+		return 0
+	}
+	return int(v.Int64)
+}
+
+func nvlString(v sql.NullString) string {
+	if !v.Valid {
+		return ""
+	}
+	return v.String
+}
+
+func nvlTime(v sql.NullTime) time.Time {
+	if !v.Valid {
+		return time.Time{}
+	}
+	return v.Time
 }
