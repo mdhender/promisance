@@ -4,6 +4,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -183,7 +184,7 @@ func (s *server) handleSetup() http.HandlerFunc {
 	}
 }
 
-type reqVariables_t struct {
+type sessionVariables_t struct {
 	User      *model.User_t
 	Empire    *model.Empire_t
 	World     *model.World_t
@@ -199,7 +200,7 @@ type reqVariables_t struct {
 	TriedPage string
 }
 
-type reqVariablesContext_t string
+type sessionVariablesContextKey_t string
 
 func (s *server) indexPhpHandler() http.HandlerFunc {
 	// temporarily save some routing information. we don't use it, but may.
@@ -291,7 +292,7 @@ func (s *server) indexPhpHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("%s %s: entered\n", r.Method, r.URL)
 
-		rv := &reqVariables_t{
+		sv := &sessionVariables_t{
 			Started: time.Now(),
 		}
 
@@ -318,29 +319,29 @@ func (s *server) indexPhpHandler() http.HandlerFunc {
 		}
 
 		// define constants based on round start/end times
-		if rv.Started.Before(s.world.RoundTimeBegin) { // pre-registration
-			rv.Round.Signup = true
-			rv.Round.Started = false
-			rv.Round.Closing = false
-			rv.Round.Finished = false
-			rv.Round.TimeNotice = s.language.Printf("ROUND_WILL_BEGIN", "ROUND_WILL_BEGIN_FORMAT", s.world.RoundTimeBegin.Sub(rv.Started))
-		} else if rv.Started.Before(s.world.RoundTimeClosing) { // normal gameplay
-			rv.Round.Signup = true
-			rv.Round.Started = true
-			rv.Round.Closing = false
-			rv.Round.Finished = false
-		} else if rv.Started.Before(s.world.RoundTimeEnd) { // final week (or so)
-			rv.Round.Signup = false
-			rv.Round.Started = true
-			rv.Round.Closing = true
-			rv.Round.Finished = false
-			rv.Round.TimeNotice = s.language.Printf("ROUND_WILL_END", "ROUND_WILL_BEGIN_FORMAT", s.world.RoundTimeEnd.Sub(rv.Started))
+		if sv.Started.Before(s.world.RoundTimeBegin) { // pre-registration
+			sv.Round.Signup = true
+			sv.Round.Started = false
+			sv.Round.Closing = false
+			sv.Round.Finished = false
+			sv.Round.TimeNotice = s.language.Printf("ROUND_WILL_BEGIN", "ROUND_WILL_BEGIN_FORMAT", s.world.RoundTimeBegin.Sub(sv.Started))
+		} else if sv.Started.Before(s.world.RoundTimeClosing) { // normal gameplay
+			sv.Round.Signup = true
+			sv.Round.Started = true
+			sv.Round.Closing = false
+			sv.Round.Finished = false
+		} else if sv.Started.Before(s.world.RoundTimeEnd) { // final week (or so)
+			sv.Round.Signup = false
+			sv.Round.Started = true
+			sv.Round.Closing = true
+			sv.Round.Finished = false
+			sv.Round.TimeNotice = s.language.Printf("ROUND_WILL_END", "ROUND_WILL_BEGIN_FORMAT", s.world.RoundTimeEnd.Sub(sv.Started))
 		} else { // end of round
-			rv.Round.Signup = false
-			rv.Round.Started = false
-			rv.Round.Closing = false
-			rv.Round.Finished = true
-			rv.Round.TimeNotice = s.language.Printf("ROUND_HAS_ENDED")
+			sv.Round.Signup = false
+			sv.Round.Started = false
+			sv.Round.Closing = false
+			sv.Round.Finished = true
+			sv.Round.TimeNotice = s.language.Printf("ROUND_HAS_ENDED")
 		}
 		// todo: inject round data into request context
 
@@ -358,38 +359,38 @@ func (s *server) indexPhpHandler() http.HandlerFunc {
 		// var needpriv model.UserFlag_t
 
 		// Add entries to this array to request entities to be loaded and locked.
-		rv.Locks = map[string]int{"emp1": 0, "emp2": 0, "user1": 0, "user2": 0, "clan1": 0, "clan2": 0, "world": 0}
+		sv.Locks = map[string]int{"emp1": 0, "emp2": 0, "user1": 0, "user2": 0, "clan1": 0, "clan2": 0, "world": 0}
 		// Set to an entity number, or use -1 (for non-empires) to determine the ID automatically from the loaded empire
 		// If loading an entity fails, its value will be reset to 0
 		// Setting 'emp1' has no effect - it exists for logging purposes and is automatically set to the current empire ID
 		// Setting 'user1' or 'world' to anything other than -1 has no effect - they only allow auto-detection.
 		// Additional locks (for special purposes) can be requested directly from $db
 
-		rv.TriedPage, _ = s.getFormVar(r, "location", "login")
+		sv.TriedPage, _ = s.getFormVar(r, "location", "login")
 		var errchk error
-		rv.Page, errchk = s.validate_location(r, rv.TriedPage)
-		rv.Action, _ = s.getFormVar(r, "action", "")
+		sv.Page, errchk = s.validate_location(r, sv.TriedPage)
+		sv.Action, _ = s.getFormVar(r, "action", "")
 
 		// if they tried entering a really, really long action, truncate it and log a warning
-		if len(rv.Action) > 64 {
-			s.logmsg(E_USER_NOTICE, "action overflowed: "+rv.Action)
-			rv.Action = rv.Action[:64]
+		if len(sv.Action) > 64 {
+			s.logmsg(E_USER_NOTICE, "action overflowed: "+sv.Action)
+			sv.Action = sv.Action[:64]
 		}
 
 		if errchk != nil {
 			message := "<table><tr><th>" + s.language.Printf("SECURITY_TITLE") + "</th></tr><tr><td>" + s.language.Printf("SECURITY_DESC") + "<br />"
 			error_args := []string{"triedpage", "action"}
-			rv.LogMsg = rv.TriedPage
+			sv.LogMsg = sv.TriedPage
 			if errors.Is(errchk, cerr.ErrBadPage) {
-				message += s.language.Printf("SECURITY_BADPAGE", url.QueryEscape(rv.TriedPage)) + "<br />"
+				message += s.language.Printf("SECURITY_BADPAGE", url.QueryEscape(sv.TriedPage)) + "<br />"
 			} else if errors.Is(errchk, cerr.ErrBadReferrer) {
 				referer := r.Referer()
-				message += s.language.Printf("SECURITY_BADREF", url.QueryEscape(rv.TriedPage)+url.QueryEscape(referer)+s.baseURL) + "<br />"
+				message += s.language.Printf("SECURITY_BADREF", url.QueryEscape(sv.TriedPage)+url.QueryEscape(referer)+s.baseURL) + "<br />"
 				error_args = append(error_args, "referer")
 			} else if errors.Is(errchk, cerr.ErrMissingReferrer) {
-				message += s.language.Printf("SECURITY_NOREF", url.QueryEscape(rv.TriedPage)) + "<br />"
+				message += s.language.Printf("SECURITY_NOREF", url.QueryEscape(sv.TriedPage)) + "<br />"
 			} else {
-				message += s.language.Printf("SECURITY_UNKNOWN", url.QueryEscape(rv.TriedPage), errchk) + "<br />"
+				message += s.language.Printf("SECURITY_UNKNOWN", url.QueryEscape(sv.TriedPage), errchk) + "<br />"
 			}
 			message += s.language.Printf("SECURITY_INSTRUCT", s.baseURL, MAIL_ADMIN) + "</td></tr></table>"
 			s.logmsg(E_USER_ERROR, "varlist($error_args, get_defined_vars())")
@@ -404,9 +405,9 @@ func (s *server) indexPhpHandler() http.HandlerFunc {
 		}
 
 		// check if destination page requires an active session
-		if s.valid_locations[rv.Page] == 2 {
+		if s.valid_locations[sv.Page] == 2 {
 			// prevent logout page from suggesting to log back in again
-			auth := s.checkAuth(r, rv.Page != "logout")
+			auth := s.checkAuth(r, sv.Page != "logout")
 			if auth != "" {
 				http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 				return
@@ -417,14 +418,14 @@ func (s *server) indexPhpHandler() http.HandlerFunc {
 		sUser := s.sessions.User(r)
 		var err error
 		if sUser.IsAuthenticated() {
-			rv.User, err = s.db.UserFetch(sUser.UserId)
+			sv.User, err = s.db.UserFetch(sUser.UserId)
 			if err != nil {
 				log.Printf("%s %s: userFetch %v\n", r.Method, r.URL, err)
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				return
 			}
-			rv.Language = rv.User.Lang
-			rv.Empire, err = s.db.EmpireFetch(sUser.EmpireId)
+			sv.Language = sv.User.Lang
+			sv.Empire, err = s.db.EmpireFetch(sUser.EmpireId)
 			if err != nil {
 				log.Printf("%s %s: empireFetch %v\n", r.Method, r.URL, err)
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -433,13 +434,24 @@ func (s *server) indexPhpHandler() http.HandlerFunc {
 		}
 
 		// finally, finally, finally...
-		// dispatch to the page handler
-		switch rv.Page {
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, sessionVariablesContextKey_t("session_variables"), sv)
 
+		// dispatch to the page handler
+		switch sv.Page {
+		case "login":
+			log.Printf("%s %s: routing to page %s\n", r.Method, r.URL, sv.Page)
+			switch r.Method {
+			case "GET":
+				s.loginGetHandler(w, r.WithContext(ctx))
+			case "POST":
+				http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
+			default:
+				http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+			}
 		default:
-			log.Printf("%s %s: page %s: not implemented\n", r.Method, r.URL, rv.Page)
+			log.Printf("%s %s: page %s: not implemented\n", r.Method, r.URL, sv.Page)
 			http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
-			return
 		}
 
 		//location := r.URL.Query().Get("location")
