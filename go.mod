@@ -3,7 +3,8 @@ module github.com/mdhender/promisance
 go 1.22.2
 
 require (
-	github.com/go-chi/chi/v5 v5.0.12
+	github.com/go-chi/chi/v5 v5.2.2
+	github.com/google/uuid v1.6.0
 	github.com/mdhender/semver v0.0.0-20240121182447-31da48bf9537
 	github.com/spf13/cobra v1.8.0
 	github.com/syyongx/php2go v0.9.8
@@ -12,7 +13,6 @@ require (
 
 require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
